@@ -280,6 +280,5 @@ Thiết kế chi tiết: [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md).
 | [`docs/TEST_CASES.md`](docs/TEST_CASES.md) | Kế hoạch kiểm thử |
 | [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) | Thiết kế thực nghiệm |
 | [`docs/REGULATION.md`](docs/REGULATION.md) | Quy ước làm việc nhóm |
-| [`docs/TASKS.md`](docs/TASKS.md) | Phân công và tiến độ |
 
 Tham khảo gốc: [Griductive](https://griductive.com) (play page và how-to-play guide, xem đề bài).
