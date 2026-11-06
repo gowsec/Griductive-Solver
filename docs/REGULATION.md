@@ -68,7 +68,7 @@ Dùng **Conventional Commits**:
 | `docs` | Tài liệu | `docs: cập nhật CNF_MAPPING mục sequential counter` |
 | `test` | Test | `test: thêm test semantics = CNF cho EXACTLY` |
 | `refactor` | Không đổi hành vi | `refactor: tách cardinality khỏi encoder` |
-| `chore` | Cấu hình, CI | `chore: thêm flake8 vào CI` |
+| `chore` | Cấu hình | `chore: fix something` |
 
 Quy tắc:
 - Một commit làm một việc; mô tả ngắn gọn.
