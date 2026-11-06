@@ -81,32 +81,6 @@ Griductive là trò chơi suy luận trên lưới N×N (N ∈ {3, 4, 5}). Mỗi
 
 ```
 StudentID1_StudentID2_..._StudentID5/
-├── Report.pdf                      # báo cáo (kèm link video demo)
-└── Source/
-    ├── main.py                     # entry point: gui | cli | experiment
-    ├── README.md
-    ├── requirements.txt
-    ├── docs/
-    │   ├── REGULATION.md           # quy ước làm việc nhóm
-    │   ├── TASKS.md                # phân công, tiến độ, % đóng góp
-    │   ├── ARCHITECTURE.md         # kiến trúc và interface (đã đóng băng)
-    │   ├── CNF_MAPPING.md          # ánh xạ clue → CNF
-    │   ├── TEST_CASES.md           # kế hoạch kiểm thử
-    │   └── EXPERIMENTS.md          # thiết kế thực nghiệm
-    ├── puzzles/                    # file JSON: 3x3_*.json, 4x4_*.json, 5x5_*.json, bad_*.json
-    ├── griductive/
-    │   ├── model/                  # CellId, Status, Region, Clue, Puzzle, PublicState
-    │   ├── io/                     # loader.py (JSON → Puzzle, có validate)
-    │   ├── engine/                 # game_engine.py
-    │   ├── logic/                  # varmap, semantics, cardinality, encoder,
-    │   │                           # dpll, entailment, agent, uniqueness, trace
-    │   ├── orchestration/          # runner_loop.py (vòng lặp suy diễn dạng generator)
-    │   ├── gui/                    # app.py, board_view.py, clue_highlight.py
-    │   └── experiments/            # runner.py, report_tables.py
-    ├── tests/                      # pytest
-    └── results/                    # CSV, bảng, biểu đồ do runner sinh ra
-
-StudentID1_StudentID2/
 ├── Report.pdf
 └── Source/
     ├── main.py                  # entry point: chọn chế độ gui / cli / experiment
