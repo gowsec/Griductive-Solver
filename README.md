@@ -114,7 +114,6 @@ StudentID1_StudentID2/
     ├── requirements.txt
     ├── docs/
     │   ├── REGULATION.md           # quy ước làm việc nhóm
-    │   ├── TASKS.md                # phân công, tiến độ, % đóng góp
     │   ├── ARCHITECTURE.md         # kiến trúc và interface (đã đóng băng)
     │   ├── CNF_MAPPING.md          # ánh xạ clue → CNF
     │   ├── TEST_CASES.md           # kế hoạch kiểm thử

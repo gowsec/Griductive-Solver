@@ -3,7 +3,7 @@
 Tài liệu kiến trúc và **hợp đồng interface** của Griductive Solver.
 Mọi thay đổi interface phải qua **đề xuất → Leader duyệt → thông báo cả nhóm**.
 
-- Trạng thái: `DRAFT` → `FROZEN` (Quang cập nhật)
+- Trạng thái: `FROZEN`
 - Chủ sở hữu tài liệu: Quang
 
 ---
