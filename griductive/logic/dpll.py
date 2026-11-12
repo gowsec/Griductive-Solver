@@ -17,6 +17,7 @@ class SolverStats:
 
     decisions: int = 0
     propagations: int = 0
+    conflicts: int = 0 # Thêm
     backtracks: int = 0
     runtime: float = 0.0
 
@@ -24,6 +25,7 @@ class SolverStats:
         """Accumulate statistics from another solver run."""
         self.decisions += other.decisions
         self.propagations += other.propagations
+        self.conflicts += other.conflicts
         self.backtracks += other.backtracks
         self.runtime += other.runtime
 
@@ -59,9 +61,12 @@ class DPLLSolver:
         assignment: dict[int, bool] = {}
 
         for lit in assumptions:
+            if lit == 0:
+                raise ValueError("Assumption literal cannot be 0.")
             var = abs(lit)
             val = lit > 0
             if var in assignment and assignment[var] != val:
+                stats.conflicts += 1
                 stats.runtime = time.perf_counter() - start_time
                 return SolveResult(satisfiable=False, model=None, stats=stats)
             assignment[var] = val
@@ -92,6 +97,9 @@ class DPLLSolver:
         if conflict:
             return False, {}
 
+        if self.pure_literal:
+            assignment, clauses = self._eliminate_pure_literals(clauses, assignment)
+
         if not clauses:
             return True, assignment
 
@@ -104,7 +112,7 @@ class DPLLSolver:
         # Branch True
         assignment_true = dict(assignment)
         assignment_true[unassigned_var] = True
-        sat, res = self._dpll(clauses + [(unassigned_var,)], num_vars, assignment_true, stats, deadline)
+        sat, res = self._dpll(clauses, num_vars, assignment_true, stats, deadline)
         if sat:
             return True, res
 
@@ -113,7 +121,7 @@ class DPLLSolver:
         # Branch False
         assignment_false = dict(assignment)
         assignment_false[unassigned_var] = False
-        sat, res = self._dpll(clauses + [(-unassigned_var,)], num_vars, assignment_false, stats, deadline)
+        sat, res = self._dpll(clauses, num_vars, assignment_false, stats, deadline)
         if sat:
             return True, res
 
@@ -122,7 +130,7 @@ class DPLLSolver:
     def _unit_propagate(
         self,
         clauses: list[tuple[int, ...]],
-        assignment: dict[dict[int, bool]],
+        assignment: dict[int, bool],
         stats: SolverStats,
     ) -> tuple[dict[int, bool], list[tuple[int, ...]], bool]:
         current_assignment = dict(assignment)
@@ -149,6 +157,7 @@ class DPLLSolver:
                 if satisfied:
                     continue
                 if not unassigned_lits:
+                    stats.conflicts += 1
                     return current_assignment, current_clauses, True
 
                 new_clause = tuple(unassigned_lits)
@@ -166,3 +175,37 @@ class DPLLSolver:
                 break
 
         return current_assignment, current_clauses, False
+
+def _eliminate_pure_literals(
+        self,
+        clauses: list[tuple[int, ...]],
+        assignment: dict[int, bool],
+    ) -> tuple[dict[int, bool], list[tuple[int, ...]]]:
+        """Assign literals that appear with only one polarity in remaining clauses."""
+        current_assignment = dict(assignment)
+        current_clauses = list(clauses)
+
+        while True:
+            polarities: dict[int, set[bool]] = {}
+            for clause in current_clauses:
+                for lit in clause:
+                    var = abs(lit)
+                    if var not in current_assignment:
+                        polarities.setdefault(var, set()).add(lit > 0)
+
+            pure_vars = {var: next(iter(pols)) for var, pols in polarities.items() if len(pols) == 1}
+            if not pure_vars:
+                break
+
+            current_assignment.update(pure_vars)
+            next_clauses: list[tuple[int, ...]] = []
+            for clause in current_clauses:
+                if any(
+                    abs(lit) in current_assignment and current_assignment[abs(lit)] == (lit > 0)
+                    for lit in clause
+                ):
+                    continue
+                next_clauses.append(clause)
+            current_clauses = next_clauses
+
+        return current_assignment, current_clauses
