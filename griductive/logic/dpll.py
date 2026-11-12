@@ -176,7 +176,7 @@ class DPLLSolver:
 
         return current_assignment, current_clauses, False
 
-def _eliminate_pure_literals(
+    def _eliminate_pure_literals(
         self,
         clauses: list[tuple[int, ...]],
         assignment: dict[int, bool],
