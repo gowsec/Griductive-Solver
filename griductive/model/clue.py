@@ -78,3 +78,53 @@ class Count(Clue):
 
     def describe(self) -> str:
         return f"{self.op} {self.k} Criminal(s) in {self.region.kind.value}"
+
+
+@dataclass(frozen=True)
+class Parity(Clue):
+    """Require an even or odd number of Criminals in a region."""
+
+    EVEN: ClassVar[str] = "EVEN"
+    ODD: ClassVar[str] = "ODD"
+
+    id: str
+    parity: str
+    region: Region
+
+    def cells(self, n: int) -> tuple[CellId, ...]:
+        return RegionResolver.cells(self.region, n)
+
+    def describe(self) -> str:
+        return f"{self.parity} number of Criminals in {self.region.kind.value}"
+
+
+@dataclass(frozen=True)
+class Compare(Clue):
+    """Compare the number of Criminals in two regions."""
+
+    LT: ClassVar[str] = "LT"
+    LE: ClassVar[str] = "LE"
+    EQ: ClassVar[str] = "EQ"
+    GE: ClassVar[str] = "GE"
+    GT: ClassVar[str] = "GT"
+    OPS: ClassVar[frozenset[str]] = frozenset({LT, LE, EQ, GE, GT})
+
+    id: str
+    left: Region
+    op: str
+    right: Region
+
+    def left_cells(self, n: int) -> tuple[CellId, ...]:
+        return RegionResolver.cells(self.left, n)
+
+    def right_cells(self, n: int) -> tuple[CellId, ...]:
+        return RegionResolver.cells(self.right, n)
+
+    def cells(self, n: int) -> tuple[CellId, ...]:
+        """Return the unique union of both regions in row-major order."""
+        return tuple(
+            sorted(set(self.left_cells(n)) | set(self.right_cells(n)))
+        )
+
+    def describe(self) -> str:
+        return f"Criminal count in {self.left.kind.value} {self.op} {self.right.kind.value}"
