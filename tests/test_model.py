@@ -4,6 +4,7 @@ import unittest
 from dataclasses import FrozenInstanceError
 
 from griductive.model.cell import CellId, Character, Status
+from griductive.model.clue import Compare, Count, Fact, Parity
 from griductive.model.region import Region, RegionKind, RegionResolver
 
 
@@ -99,6 +100,28 @@ class RegionResolverTests(unittest.TestCase):
         for region, n in cases:
             with self.subTest(region=region, n=n), self.assertRaises(ValueError):
                 RegionResolver.cells(region, n)
+
+
+class ClueModelTests(unittest.TestCase):
+    def test_clue_cells_resolve_regions_and_highlight_compared_cells(self) -> None:
+        row = Region(RegionKind.ROW, row=0)
+        column = Region(RegionKind.COL, col=1)
+        count = Count("count", Count.EQ, 1, row)
+        parity = Parity("parity", row, Parity.ODD)
+        compare = Compare("compare", row, Compare.GT, column)
+
+        self.assertEqual(
+            count.cells(3), (CellId(0, 0), CellId(0, 1), CellId(0, 2))
+        )
+        self.assertEqual(parity.cells(3), count.cells(3))
+        self.assertEqual(
+            compare.cells(3),
+            (
+                CellId(0, 0), CellId(0, 1), CellId(0, 2),
+                CellId(1, 1), CellId(2, 1),
+            ),
+        )
+        self.assertTrue(compare.describe())
 
 
 if __name__ == "__main__":
