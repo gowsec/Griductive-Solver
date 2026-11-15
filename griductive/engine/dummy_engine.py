@@ -2,32 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import Enum
-from typing import Mapping
+from types import MappingProxyType
+
+from griductive.engine.game_engine import VerdictOutcome, VerdictResult
 
 from griductive.model.cell import CellId, Character, Status
 from griductive.model.clue import Clue, Fact
 from griductive.model.puzzle import PublicState, Puzzle
-
-
-class VerdictOutcome(Enum):
-    """Outcome of submitting a status verdict to the game engine."""
-
-    ACCEPTED = "ACCEPTED"
-    NOT_PROVABLE = "NOT_PROVABLE"
-    CONTRADICTED = "CONTRADICTED"
-    INCONSISTENT = "INCONSISTENT"
-
-
-@dataclass(frozen=True)
-class VerdictResult:
-    """Result returned by game engine submit call."""
-
-    outcome: VerdictOutcome
-    cell: CellId
-    revealed_clue: Clue | None = None
-    queries: tuple = ()
 
 
 class DummyEngine:
@@ -101,18 +82,14 @@ class DummyEngine:
         return PublicState(
             n=n,
             revealed_clues=tuple(self._revealed_clues),
-            proved=dict(self._proved),
+            proved=MappingProxyType(dict(sorted(self._proved.items()))),
             unsolved=unsolved,
         )
 
     def submit(self, cell: CellId, status: Status) -> VerdictResult:
         """Submit a status verdict for a cell."""
         if cell in self._proved:
-            return VerdictResult(
-                outcome=VerdictOutcome.ACCEPTED,
-                cell=cell,
-                revealed_clue=self.puzzle.clues.get(cell),
-            )
+            raise ValueError(f"cell {cell} has already been solved")
 
         expected_status = self.puzzle.solution[cell]
         if status is expected_status:
