@@ -1,0 +1,134 @@
+{
+  "n": 3,
+  "characters": {
+    "A1": {
+      "name": "Abel",
+      "job": "Astronaut"
+    },
+    "B1": {
+      "name": "Bea",
+      "job": "Cook"
+    },
+    "C1": {
+      "name": "Clara",
+      "job": "Guard"
+    },
+    "A2": {
+      "name": "Derek",
+      "job": "Cook"
+    },
+    "B2": {
+      "name": "Eliza",
+      "job": "Detective"
+    },
+    "C2": {
+      "name": "Franz",
+      "job": "Detective"
+    },
+    "A3": {
+      "name": "Grant",
+      "job": "Clerk"
+    },
+    "B3": {
+      "name": "Hannah",
+      "job": "Guard"
+    },
+    "C3": {
+      "name": "Ivy",
+      "job": "Clerk"
+    }
+  },
+  "solution": {
+    "A1": "INNOCENT",
+    "B1": "INNOCENT",
+    "C1": "INNOCENT",
+    "A2": "CRIMINAL",
+    "B2": "CRIMINAL",
+    "C2": "INNOCENT",
+    "A3": "CRIMINAL",
+    "B3": "CRIMINAL",
+    "C3": "INNOCENT"
+  },
+  "initial_revealed": [
+    "A1",
+    "B2"
+  ],
+  "clues": {
+    "A1": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {
+        "kind": "COL",
+        "col": "A"
+      }
+    },
+    "B1": {
+      "type": "AT_MOST",
+      "k": 2,
+      "region": {
+        "kind": "ROW",
+        "row": 3
+      }
+    },
+    "C1": {
+      "type": "AT_MOST",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "A1",
+          "C1",
+          "B3",
+          "C3"
+        ]
+      }
+    },
+    "A2": {
+      "type": "AT_LEAST",
+      "k": 0,
+      "region": {
+        "kind": "COL",
+        "col": "C"
+      }
+    },
+    "B2": {
+      "type": "AT_MOST",
+      "k": 0,
+      "region": {
+        "kind": "COL",
+        "col": "C"
+      }
+    },
+    "C2": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "A1",
+          "B1",
+          "A2",
+          "B3"
+        ]
+      }
+    },
+    "A3": {
+      "type": "SAME",
+      "a": "C3",
+      "b": "A1"
+    },
+    "B3": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {
+        "kind": "ROW",
+        "row": 2
+      }
+    },
+    "C3": {
+      "type": "DIFFERENT",
+      "a": "A3",
+      "b": "B1"
+    }
+  }
+}
