@@ -10,6 +10,7 @@ from griductive.logic.encoder import CNFEncoder
 from griductive.logic.varmap import VarMap
 from griductive.model.cell import CellId, Status
 from griductive.model.clue import Clue
+from griductive.model.puzzle import PublicState
 
 
 @dataclass(frozen=True)
@@ -100,33 +101,55 @@ def check_uniqueness_cnf(
 
 
 def check_uniqueness(
-    clues: Sequence[Clue],
-    n: int,
+    state_or_clues: PublicState | Sequence[Clue],
+    n: int | None = None,
     solver: DPLLSolver | None = None,
     encoder: CNFEncoder | None = None,
 ) -> UniquenessReport:
-    """Check if all clues together force a unique solution for an n x n grid."""
+    """Check if a PublicState or set of clues forces a unique solution for an n x n grid."""
+    if isinstance(state_or_clues, PublicState):
+        state = state_or_clues
+        if n is not None and n != state.n:
+            raise ValueError(
+                f"Provided n ({n}) does not match PublicState grid size ({state.n})"
+            )
+        grid_n = state.n
+    elif isinstance(state_or_clues, (list, tuple)):
+        if n is None or not isinstance(n, int) or n <= 0:
+            raise ValueError("n must be a positive integer when passing a sequence of clues")
+        grid_n = n
+        unsolved = tuple(
+            CellId(r, c) for r in range(grid_n) for c in range(grid_n)
+        )
+        state = PublicState(
+            n=grid_n,
+            revealed_clues=tuple(state_or_clues),
+            proved={},
+            unsolved=unsolved,
+        )
+    else:
+        raise TypeError("state_or_clues must be a PublicState or Sequence[Clue]")
+
     if solver is None:
         solver = DPLLSolver()
     if encoder is None:
-        encoder = CNFEncoder(n)
+        encoder = CNFEncoder(grid_n)
+    elif encoder.n != grid_n:
+        raise ValueError(
+            f"Encoder size ({encoder.n}) does not match grid size ({grid_n})"
+        )
 
-    # Encode all clues into CNF
-    cnf_clauses: list[tuple[int, ...]] = []
-    for clue in clues:
-        cnf_clauses.extend(encoder.encode(clue))
+    # Build KB using build_kb from CNFEncoder
+    kb = encoder.build_kb(state)
 
-    varmap = encoder.varmap
-    n_primary = varmap.n_primary
-    num_vars = varmap.n_primary + varmap.n_aux
-
-    report_cnf = check_uniqueness_cnf(cnf_clauses, n_primary, num_vars, solver)
+    report_cnf = check_uniqueness_cnf(kb.clauses, kb.n_primary, kb.num_vars, solver)
 
     # Convert models from variable ids to CellId -> Status mappings
+    varmap = encoder.varmap
     converted_models = []
     for raw_model in report_cnf.models:
         cell_status_map: dict[CellId, Status] = {}
-        for var in range(1, n_primary + 1):
+        for var in range(1, kb.n_primary + 1):
             cell = varmap.cell(var)
             is_criminal = raw_model.get(var, False)
             cell_status_map[cell] = Status.CRIMINAL if is_criminal else Status.INNOCENT

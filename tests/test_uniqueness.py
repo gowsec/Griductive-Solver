@@ -12,6 +12,7 @@ from griductive.logic.uniqueness import (
 )
 from griductive.model.cell import CellId, Status
 from griductive.model.clue import Fact
+from griductive.model.puzzle import PublicState
 
 
 class UniquenessTests(unittest.TestCase):
@@ -60,6 +61,25 @@ class UniquenessTests(unittest.TestCase):
         model = report.models[0]
         self.assertEqual(model[CellId(0, 0)], Status.CRIMINAL)
         self.assertEqual(model[CellId(0, 1)], Status.INNOCENT)
+
+    def test_check_uniqueness_with_public_state(self) -> None:
+        n = 2
+        clues = (
+            Fact("c1", CellId(0, 0), Status.CRIMINAL),
+            Fact("c2", CellId(0, 1), Status.INNOCENT),
+        )
+        proved = {CellId(1, 0): Status.INNOCENT, CellId(1, 1): Status.CRIMINAL}
+        unsolved = (CellId(0, 0), CellId(0, 1))
+        state = PublicState(n=n, revealed_clues=clues, proved=proved, unsolved=unsolved)
+
+        report = check_uniqueness(state)
+        self.assertEqual(report.status, "UNIQUE")
+        self.assertEqual(report.models_found, 1)
+        model = report.models[0]
+        self.assertEqual(model[CellId(0, 0)], Status.CRIMINAL)
+        self.assertEqual(model[CellId(0, 1)], Status.INNOCENT)
+        self.assertEqual(model[CellId(1, 0)], Status.INNOCENT)
+        self.assertEqual(model[CellId(1, 1)], Status.CRIMINAL)
 
 
 if __name__ == "__main__":
