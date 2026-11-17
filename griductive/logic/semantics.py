@@ -22,6 +22,12 @@ def holds(
     if isinstance(n, bool) or not isinstance(n, int) or n <= 0:
         raise ValueError("n must be a positive integer")
 
+    # Validate the full row-major model before evaluating any cells. Some
+    # clues may refer to an empty region, in which case ``criminal`` is never
+    # called and cannot serve as the place for this input validation.
+    if not isinstance(assignment, Mapping) and len(assignment) != n * n:
+        raise ValueError(f"assignment must contain exactly {n * n} values")
+
     def criminal(cell: CellId) -> bool:
         if not (0 <= cell.row < n and 0 <= cell.col < n):
             raise ValueError(f"cell {cell} is outside the {n}x{n} grid")
@@ -30,8 +36,6 @@ def holds(
                 raise ValueError(f"assignment is missing cell {cell}")
             value = assignment[cell]
         else:
-            if len(assignment) != n * n:
-                raise ValueError(f"assignment must contain exactly {n * n} values")
             value = assignment[cell.row * n + cell.col]
         if isinstance(value, Status):
             return value is Status.CRIMINAL
