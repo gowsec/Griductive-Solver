@@ -262,13 +262,17 @@ Nội dung từng puzzle do M2 thiết kế; **kỳ vọng** dưới đây là h
 
 | File | Cỡ | Yêu cầu nội dung | Kỳ vọng |
 |---|:-:|---|---|
-| `3x3_01.json` | 3×3 | Chỉ 6 clue cơ bản, ít thẻ lật sẵn | `UNIQUE`, `SOLVED` |
+| `3x3_01.json` | 3×3 | Chuỗi FACT/SAME/DIFFERENT; chỉ lật sẵn A1 | `UNIQUE`, `SOLVED` |
 | `3x3_02.json` | 3×3 | Có clue đếm với `neighbors` | `UNIQUE`, `SOLVED` |
 | `3x3_03.json` | 3×3 | Có ít nhất 1 clue extension (`PARITY` hoặc `COMPARE`) | `UNIQUE`, `SOLVED` |
-| `4x4_01.json` | 4×4 | Cơ bản + `CELLS` | `UNIQUE`, `SOLVED` |
+| `4x4_01.json` | 4×4 | Chuỗi suy diễn FACT/SAME/DIFFERENT; chỉ lật sẵn A1 | `UNIQUE`, `SOLVED` |
 | `4x4_02.json` | 4×4 | Cần nhiều "đợt" lật (suy diễn bắc cầu) | `UNIQUE`, `SOLVED` |
 | `4x4_03.json` | 4×4 | Có cả `PARITY` và `COMPARE` | `UNIQUE`, `SOLVED` |
 | `5x5_01.json` | 5×5 | Stress: nhiều clue vùng lớn (hàng/cột 5 ô) | `UNIQUE`, `SOLVED` (có thể chậm; ghi nhận thời gian) |
+
+Hai puzzle đầu tiên được kiểm uniqueness tạm bằng vét cạn trên mọi phép gán
+(512 cho 3×3, 65.536 cho 4×4) qua `semantics.holds`; test nằm ở
+`tests/test_sample_puzzles.py`.
 
 ### 4.2 Puzzle cố ý lỗi (phải bị phát hiện đúng)
 

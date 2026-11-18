@@ -121,6 +121,11 @@ class ClueModelTests(unittest.TestCase):
                 CellId(1, 1), CellId(2, 1),
             ),
         )
+        self.assertEqual(compare.left_cells(3), count.cells(3))
+        self.assertEqual(
+            compare.right_cells(3),
+            (CellId(0, 1), CellId(1, 1), CellId(2, 1)),
+        )
         self.assertTrue(compare.describe())
 
 

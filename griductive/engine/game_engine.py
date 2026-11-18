@@ -84,7 +84,11 @@ class GameEngine:
         )
 
     def submit(self, cell: CellId, status: Status) -> VerdictResult:
-        """Submit a proposed status and reveal its clue only if proved.
+        """Submit a proposed status, retaining the frozen engine interface."""
+        return self.reveal(cell, status)
+
+    def reveal(self, cell: CellId, status: Status) -> VerdictResult:
+        """Reveal a cell only when the oracle proves the submitted status.
 
         Raises:
             ValueError: If the cell is not in the puzzle or has already been

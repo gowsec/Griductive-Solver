@@ -131,18 +131,24 @@ class Compare(Clue):
     EQ: ClassVar[str] = "EQ"
     GE: ClassVar[str] = "GE"
     GT: ClassVar[str] = "GT"
+    OPS: ClassVar[frozenset[str]] = frozenset({LT, LE, EQ, GE, GT})
 
     id: str
     left: Region
     op: str
     right: Region
 
+    def left_cells(self, n: int) -> tuple[CellId, ...]:
+        """Return the cells counted on the left side of the comparison."""
+        return RegionResolver.cells(self.left, n)
+
+    def right_cells(self, n: int) -> tuple[CellId, ...]:
+        """Return the cells counted on the right side of the comparison."""
+        return RegionResolver.cells(self.right, n)
+
     def cells(self, n: int) -> tuple[CellId, ...]:
         """Return the unique cells in both compared regions, row-major."""
-        return tuple(sorted(set(
-            RegionResolver.cells(self.left, n)
-            + RegionResolver.cells(self.right, n)
-        )))
+        return tuple(sorted(set(self.left_cells(n)) | set(self.right_cells(n))))
 
     def describe(self) -> str:
         """Describe the comparison between criminal counts."""
