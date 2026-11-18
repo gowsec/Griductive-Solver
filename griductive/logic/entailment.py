@@ -38,6 +38,25 @@ class Classification:
     queries: tuple[SatQueryRecord, ...]
 
 
+def check_kb_consistency(
+    kb: KB,
+    solver: DPLLSolver | None = None,
+) -> SatQueryRecord:
+    """Execute an assumption-free SAT(KB) check to verify KB consistency."""
+    active_solver = solver if solver is not None else DPLLSolver()
+    res = active_solver.solve(
+        clauses=kb.clauses,
+        num_vars=kb.num_vars,
+        assumptions=(),
+    )
+    return SatQueryRecord(
+        cell=None,
+        assumption=None,
+        satisfiable=res.satisfiable,
+        stats=res.stats,
+    )
+
+
 def classify(
     kb: KB,
     varmap: VarMap,
@@ -72,11 +91,10 @@ def classify(
         )
 
     var = varmap.var(cell)
-    if solver is None:
-        solver = DPLLSolver()
+    active_solver = solver if solver is not None else DPLLSolver()
 
     # Query 1: SAT(KB ^ ~C_i) -> test if cell can be INNOCENT (-var)
-    res_neg = solver.solve(
+    res_neg = active_solver.solve(
         clauses=kb.clauses,
         num_vars=kb.num_vars,
         assumptions=(-var,),
@@ -89,7 +107,7 @@ def classify(
     )
 
     # Query 2: SAT(KB ^ C_i) -> test if cell can be CRIMINAL (+var)
-    res_pos = solver.solve(
+    res_pos = active_solver.solve(
         clauses=kb.clauses,
         num_vars=kb.num_vars,
         assumptions=(var,),
