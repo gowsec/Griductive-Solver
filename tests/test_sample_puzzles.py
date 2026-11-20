@@ -2,17 +2,18 @@
 
 import itertools
 import unittest
+from importlib import import_module
 from pathlib import Path
-from types import SimpleNamespace
 
 from griductive.engine.dummy_engine import VerdictOutcome
 from griductive.engine.game_engine import GameEngine
-from griductive.io.loader import load_puzzle
+from griductive.io.loader import PuzzleError, load_puzzle
+from griductive.logic.agent import LogicAgent
+from griductive.logic.uniqueness import check_uniqueness
 from griductive.model.cell import CellId, Status
-from griductive.model.puzzle import PublicState
 
 try:
-    from griductive.logic.semantics import holds
+    holds = import_module("griductive.logic.semantics").holds
 except ModuleNotFoundError as error:
     if error.name != "griductive.logic.semantics":
         raise
@@ -20,7 +21,13 @@ except ModuleNotFoundError as error:
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAMPLE_PUZZLES = (ROOT / "puzzles/3x3_01.json", ROOT / "puzzles/4x4_01.json")
+SAMPLE_PUZZLES = (
+    ROOT / "puzzles/3x3_01.json",
+    ROOT / "puzzles/4x4_01.json",
+    ROOT / "puzzles/5x5_01.json",
+)
+CLASSIFIABLE_PUZZLES = SAMPLE_PUZZLES
+BRUTE_FORCE_PUZZLES = SAMPLE_PUZZLES[:2]
 SEMANTICS_AVAILABLE = holds is not None
 
 
@@ -29,10 +36,10 @@ class SamplePuzzleTests(unittest.TestCase):
         for path in SAMPLE_PUZZLES:
             with self.subTest(path=path.name):
                 puzzle = load_puzzle(path)
-                self.assertIn(puzzle.n, (3, 4))
+                self.assertIn(puzzle.n, (3, 4, 5))
                 self.assertEqual(len(puzzle.characters), puzzle.n**2)
                 self.assertEqual(len(puzzle.clues), puzzle.n**2)
-                self.assertEqual(puzzle.initial_revealed, frozenset({CellId(0, 0)}))
+                self.assertIn(CellId(0, 0), puzzle.initial_revealed)
 
     @unittest.skipIf(
         not SEMANTICS_AVAILABLE,
@@ -40,7 +47,7 @@ class SamplePuzzleTests(unittest.TestCase):
     )
     def test_each_puzzle_has_exactly_one_model_by_semantics(self) -> None:
         assert holds is not None
-        for path in SAMPLE_PUZZLES:
+        for path in BRUTE_FORCE_PUZZLES:
             with self.subTest(path=path.name):
                 puzzle = load_puzzle(path)
                 cells = tuple(
@@ -69,56 +76,74 @@ class SamplePuzzleTests(unittest.TestCase):
                     },
                 )
 
-    @unittest.skipIf(
-        not SEMANTICS_AVAILABLE,
-        "waiting for griductive.logic.semantics to be merged into dev",
-    )
-    def test_game_engine_reveals_each_puzzle_from_public_clues(self) -> None:
-        assert holds is not None
-
-        def oracle(state: PublicState, cell: CellId) -> SimpleNamespace:
-            unknown_cells = tuple(state.unsolved)
-            possibilities: set[bool] = set()
-            for values in itertools.product((False, True), repeat=len(unknown_cells)):
-                assignment = dict(state.proved)
-                assignment.update(zip(unknown_cells, values))
-                if all(
-                    holds(clue, assignment, state.n)
-                    for clue in state.revealed_clues
-                ):
-                    possibilities.add(assignment[cell])
-                    if len(possibilities) == 2:
-                        break
-
-            if not possibilities:
-                verdict = "INCONSISTENT"
-            elif possibilities == {True}:
-                verdict = "CRIMINAL"
-            elif possibilities == {False}:
-                verdict = "INNOCENT"
-            else:
-                verdict = "UNKNOWN"
-            return SimpleNamespace(verdict=verdict, queries=())
-
+    def test_m5_checks_uniqueness_for_all_valid_puzzles(self) -> None:
         for path in SAMPLE_PUZZLES:
             with self.subTest(path=path.name):
-                engine = GameEngine.load(str(path), oracle)
-                while engine.public_state().unsolved:
-                    state = engine.public_state()
-                    cell = state.unsolved[0]
-                    classification = oracle(state, cell)
-                    self.assertIn(
-                        classification.verdict, ("CRIMINAL", "INNOCENT")
-                    )
-                    result = engine.reveal(
-                        cell, Status[classification.verdict]
-                    )
-                    self.assertIs(result.outcome, VerdictOutcome.ACCEPTED)
+                puzzle = load_puzzle(path)
+                report = check_uniqueness(tuple(puzzle.clues.values()), n=puzzle.n)
+                self.assertEqual(report.status, "UNIQUE")
+                self.assertEqual(report.models_found, 1)
+                self.assertEqual(report.models[0], puzzle.solution)
 
-                self.assertEqual(
-                    engine.public_state().proved,
-                    engine.puzzle.solution,
-                )
+    def test_game_engine_submit_uses_real_logic_agent_classify(self) -> None:
+        for path in CLASSIFIABLE_PUZZLES:
+            with self.subTest(path=path.name):
+                agent = LogicAgent()
+                engine = GameEngine.load(str(path), agent.classify)
+                while not engine.is_solved():
+                    state = engine.public_state()
+                    forced = None
+                    for candidate in state.unsolved:
+                        classification = agent.classify(state, candidate)
+                        if classification.verdict.name in ("CRIMINAL", "INNOCENT"):
+                            forced = (candidate, classification)
+                            break
+                    self.assertIsNotNone(
+                        forced, f"no forced cell remains in {path.name}"
+                    )
+                    cell, classification = forced
+                    self.assertIn(
+                        classification.verdict.name,
+                        ("CRIMINAL", "INNOCENT"),
+                        f"no forced cell remains in {path.name}",
+                    )
+                    submitted = (
+                        Status.CRIMINAL
+                        if classification.verdict.name == "CRIMINAL"
+                        else Status.INNOCENT
+                    )
+                    result = engine.submit(cell, submitted)
+                    self.assertIs(result.outcome, VerdictOutcome.ACCEPTED)
+                    self.assertTrue(result.queries)
+                self.assertEqual(engine.public_state().proved, engine.puzzle.solution)
+
+    def test_invalid_puzzle_fixtures_are_rejected_by_loader(self) -> None:
+        invalid_puzzles = (
+            "bad_contradiction.json",
+            "bad_invalid_k.json",
+            "bad_missing_cell.json",
+            "bad_unknown_cell.json",
+            "bad_schema.json",
+            "bad_solution_mismatch.json",
+        )
+        for filename in invalid_puzzles:
+            with self.subTest(filename=filename), self.assertRaises(PuzzleError):
+                load_puzzle(ROOT / "puzzles" / filename)
+
+    def test_m5_distinguishes_not_unique_and_stuck_puzzles(self) -> None:
+        not_unique = load_puzzle(ROOT / "puzzles/bad_not_unique.json")
+        not_unique_report = check_uniqueness(
+            tuple(not_unique.clues.values()), n=not_unique.n
+        )
+        self.assertEqual(not_unique_report.status, "NOT_UNIQUE")
+        self.assertEqual(not_unique_report.models_found, 2)
+
+        stuck = load_puzzle(ROOT / "puzzles/bad_stuck.json")
+        stuck_report = check_uniqueness(tuple(stuck.clues.values()), n=stuck.n)
+        self.assertEqual(stuck_report.status, "UNIQUE")
+        agent = LogicAgent()
+        engine = GameEngine(stuck, agent.classify)
+        self.assertIsNone(agent.next_forced(engine.public_state()))
 
 
 if __name__ == "__main__":

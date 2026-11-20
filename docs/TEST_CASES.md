@@ -268,24 +268,24 @@ Nội dung từng puzzle do M2 thiết kế; **kỳ vọng** dưới đây là h
 | `4x4_01.json` | 4×4 | Chuỗi suy diễn FACT/SAME/DIFFERENT; chỉ lật sẵn A1 | `UNIQUE`, `SOLVED` |
 | `4x4_02.json` | 4×4 | Cần nhiều "đợt" lật (suy diễn bắc cầu) | `UNIQUE`, `SOLVED` |
 | `4x4_03.json` | 4×4 | Có cả `PARITY` và `COMPARE` | `UNIQUE`, `SOLVED` |
-| `5x5_01.json` | 5×5 | Stress: nhiều clue vùng lớn (hàng/cột 5 ô) | `UNIQUE`, `SOLVED` (có thể chậm; ghi nhận thời gian) |
+| `5x5_01.json` | 5×5 | Clue đếm hàng/cột 5 ô; lật sẵn cột A để kiểm tra suy diễn trên lưới lớn | `UNIQUE`, `SOLVED` |
 
-Hai puzzle đầu tiên được kiểm uniqueness tạm bằng vét cạn trên mọi phép gán
-(512 cho 3×3, 65.536 cho 4×4) qua `semantics.holds`; test nằm ở
-`tests/test_sample_puzzles.py`.
+Các puzzle chuẩn được kiểm uniqueness bằng M5 (`check_uniqueness`). Puzzle 3×3
+và 4×4 còn được đối chiếu vét cạn qua `semantics.holds` khi module semantics
+có mặt; test nằm ở `tests/test_sample_puzzles.py`.
 
 ### 4.2 Puzzle cố ý lỗi (phải bị phát hiện đúng)
 
 | File | Lỗi | Kỳ vọng |
 |---|---|---|
-| `bad_contradiction.json` | Hai clue mâu thuẫn trực tiếp (ví dụ `FACT A1 CRIMINAL` và `FACT A1 INNOCENT` cùng lộ) | `check_uniqueness`: `UNSAT`; agent: `INCONSISTENT` |
+| `bad_contradiction.json` | Clue `FACT` của A1 mâu thuẫn với solution đã khai báo | Loader: `PuzzleError` |
 | `bad_not_unique.json` | Thiếu clue, có ≥ 2 lời giải đầy đủ | `check_uniqueness`: `NOT_UNIQUE`; agent kết thúc `STUCK` (không đoán) |
 | `bad_stuck.json` | Hợp lệ (duy nhất) nhưng suy diễn từ trạng thái đầu không tiến được | Agent: `STUCK`; không lật thẻ nào ngoài thẻ ban đầu |
 | `bad_invalid_k.json` | `EXACTLY` với `k > |R|` | Loader: `PuzzleError` |
 | `bad_missing_cell.json` | Thiếu clue của một ô | Loader: `PuzzleError` |
 | `bad_unknown_cell.json` | Clue nhắc ô `"Z9"` | Loader: `PuzzleError` |
 | `bad_schema.json` | `type` không tồn tại / thiếu trường | Loader: `PuzzleError` |
-| `bad_solution_mismatch.json` | `solution` không thỏa một clue | Loader: lỗi hoặc cảnh báo rõ |
+| `bad_solution_mismatch.json` | `solution` không thỏa một clue | Loader: `PuzzleError` |
 
 > Cần phân biệt: `bad_not_unique` và `bad_stuck` đều dẫn đến `STUCK`, nhưng uniqueness check cho kết quả khác nhau (`NOT_UNIQUE` và `UNIQUE`). Cả hai đều phải có test riêng.
 

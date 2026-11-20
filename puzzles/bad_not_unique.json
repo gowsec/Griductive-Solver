@@ -1,0 +1,22 @@
+{
+  "n": 2,
+  "characters": {
+    "A1": {"name": "Alice", "job": "Detective"},
+    "B1": {"name": "Bao", "job": "Doctor"},
+    "A2": {"name": "Chi", "job": "Artist"},
+    "B2": {"name": "Dara", "job": "Chef"}
+  },
+  "solution": {
+    "A1": "CRIMINAL",
+    "B1": "CRIMINAL",
+    "A2": "INNOCENT",
+    "B2": "INNOCENT"
+  },
+  "initial_revealed": [],
+  "clues": {
+    "A1": {"type": "SAME", "a": "A1", "b": "B1"},
+    "B1": {"type": "SAME", "a": "A1", "b": "B1"},
+    "A2": {"type": "SAME", "a": "A2", "b": "B2"},
+    "B2": {"type": "SAME", "a": "A2", "b": "B2"}
+  }
+}

@@ -184,7 +184,7 @@ Nguyên tắc: **không loại bất kỳ puzzle nào khỏi kết quả** vì l
 
 | Puzzle | Kết quả mong đợi | Kiểm chứng |
 |---|---|---|
-| `bad_contradiction` | `status = INCONSISTENT`; `unique = UNSAT` | Terminal đúng; không có verdict nào được đưa ra |
+| `bad_contradiction` | Loader từ chối clue mâu thuẫn với solution đã khai báo | `PuzzleError` nêu rõ lỗi dữ liệu |
 | `bad_not_unique` | `status = STUCK`; `unique = NOT_UNIQUE` | Agent **không đoán**; số bước < số ô chưa giải |
 | `bad_stuck` | `status = STUCK`; `unique = UNIQUE` | Khác `bad_not_unique`: puzzle hợp lệ nhưng thiếu thông tin ban đầu |
 
