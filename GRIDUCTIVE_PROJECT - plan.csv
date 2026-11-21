@@ -1,0 +1,56 @@
+CHI TIẾT CÔNG VIỆC,,,,
+,,,,
+Giai đoạn 1: CN 8/11 → T7 14/11 (Nền tảng),,,,
+Phần A,,,,
+Vai trò,Nhiệm vụ,Deadline,Ghi chú,Trạng thái
+M1,"Soạn ARCHITECTURE.md (Clue, PublicState, VerdictResult, SatQueryRecord, schema JSON gồm cả extension), REGULATION.md, TASKS.md, setup repo, khung CNF_MAPPING.md và TEST_CASES.md",completed,,TRUE
+M2,"CellId, Status, Character, Region",10/11,,TRUE
+M3,"VarMap, cardinality (nhận list biến nguyên nên không phụ thuộc ai)",10/11,,TRUE
+M4,"DPLL hoàn chỉnh: unit propagation, conflict, branching, backtrack, assumptions, SolverStats, test_dpll.py (chạy trên CNF dạng list số nguyên)",10/11,,FALSE
+M5,"Khung GUI Tkinter với engine giả cố định, bắt đầu uniqueness.py bằng blocking clause trên CNF số nguyên",10/11,,TRUE
+,,,,
+Phần B,,,,
+Vai trò,Nhiệm vụ,Deadline,Ghi chú,Trạng thái
+M1,Dựng CLI tích hợp: JSON → loader → encoder → DPLL,14/11,,FALSE
+M2,"Dataclass Clue, Puzzle, PublicState, loader + validate, engine giả (dựa trên interface đã đóng băng)",12/11,,FALSE
+M3,"semantics, encoder 6 clue, build_kb, đếm biến/mệnh đề, test semantics = CNF (cần Clue và RegionResolver)",13/11,,TRUE
+M4,Bắt đầu entailment.classify (cần build_kb của M3 để test thật),14/11,,FALSE
+M5,"Nối uniqueness với build_kb thật, GUI hiển thị NOT_PROVABLE/CONTRADICTED và highlight clue (cần clue.cells(n))",14/11,,FALSE
+,,,,
+Kết thúc giai đoạn 1 phải có: CLI chạy được ví dụ KB trong đề; interface đã đóng băng; GUI tĩnh hiển thị được lưới.,,,,
+,,,,
+Giai đoạn 2: CN 15/11 → T7 21/11 (Tích hợp lõi và vòng lặp suy diễn),,,,
+Phần A,,,,
+Vai trò,Nhiệm vụ,Deadline,Ghi chú,Trạng thái
+M1,"main.py (gui / cli / experiment), khung LaTeX báo cáo",,,FALSE
+M2,"GameEngine thật: public_state, reveal, load, restart; tạo puzzle 3×3 và 4×4 (kiểm tạm bằng brute force với semantics.holds)",,,FALSE
+M3,"2 extension PARITY và COMPARE (clue, holds, encode), test semantics = CNF, sequential counter",,,TRUE
+M4,"entailment.classify hoàn thiện, classify_all, next_forced, hint, test_agent.py, kiểm tra agent không import engine",,,FALSE
+M5,"trace.py (TraceStep, xuất JSON/CSV), khung runner.py xuất CSV 6 chỉ số",,,FALSE
+,,,,
+Phần B,,,,
+Vai trò,Nhiệm vụ,Deadline,Ghi chú,Trạng thái
+M1,"Chạy Auto Solve end-to-end bằng CLI, đọc lại toàn bộ bắt lỗi interface",,,FALSE
+M2,"submit dùng classify thật, kiểm uniqueness các puzzle bằng M5, puzzle lỗi và 5×5",,,FALSE
+M3,Phối hợp M2 đưa extension vào vài puzzle,,,FALSE
+M4,"Hỗ trợ debug, đo hiệu năng khi tích hợp",,,FALSE
+M5,"runner_loop.py dạng generator và nối GUI với engine thật (cần classify, next_forced, engine thật); Hint và Auto Solve animate; chạy thử runner trên 3×3",,,FALSE
+,,,,
+"Kết thúc giai đoạn 2 phải có: Auto Solve chạy hết puzzle 3×3 và 4×4 trên GUI; bộ puzzle (chuẩn, lỗi, 5×5) sẵn sàng; runner xuất được CSV.",,,,
+,,,,
+"Giai đoạn 3: CN 22/11 → T7 28/11 (Thực nghiệm, báo cáo, video)",,,,
+Phần A,,,,
+Vai trò,Nhiệm vụ,Deadline,Ghi chú,Trạng thái
+M1,,,,FALSE
+M2,,,,FALSE
+M3,,,,FALSE
+M4,,,,FALSE
+M5,,,,FALSE
+,,,,
+Phần B,,,,
+Vai trò,Nhiệm vụ,Deadline,Ghi chú,Trạng thái
+M1,,,,FALSE
+M2,,,,FALSE
+M3,,,,FALSE
+M4,,,,FALSE
+M5,,,,FALSE
