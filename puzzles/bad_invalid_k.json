@@ -1,0 +1,13 @@
+{
+  "n": 1,
+  "characters": {"A1": {"name": "Alex", "job": "Detective"}},
+  "solution": {"A1": "CRIMINAL"},
+  "initial_revealed": [],
+  "clues": {
+    "A1": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "CELLS", "cells": ["A1"]}
+    }
+  }
+}
