@@ -9,6 +9,10 @@ from tkinter import font as tkfont
 from typing import Any
 
 from griductive.engine.dummy_engine import DummyEngine, VerdictOutcome, VerdictResult
+from griductive.logic.agent import LogicAgent
+from griductive.logic.entailment import Verdict
+from griductive.logic.trace import TraceLog
+from griductive.orchestration.runner_loop import deduction_loop
 from griductive.model.cell import CellId, Status
 
 # ── Palette ──────────────────────────────────────────────────────────────────
@@ -49,6 +53,9 @@ class GriductiveGUI:
         self.root.configure(bg=BG)
 
         self.engine = engine if engine is not None else DummyEngine()
+        self.agent = LogicAgent() if hasattr(self.engine, "puzzle") else None
+        self._auto_iterator: Any = None
+        self._auto_trace: TraceLog | None = None
         self.selected_cell: CellId | None = None
         self.highlighted_cells: set[CellId] = set()
         self.auto_solving = False
@@ -204,7 +211,6 @@ class GriductiveGUI:
         self.lbl_progress.config(text=f"{done} / {total} cells")
 
         if self.engine.is_solved():
-            self._stop_auto()
             self.set_status("🎉 PUZZLE SOLVED!", GREEN)
 
     def _render_grid(self, state: Any) -> None:
@@ -399,7 +405,23 @@ class GriductiveGUI:
     def on_load_puzzle(self) -> None:
         filename = filedialog.askopenfilename(filetypes=[("JSON Puzzles", "*.json"), ("All Files", "*.*")])
         if filename:
-            self.log(f"Selected puzzle file: {filename}")
+            self._load_real_puzzle(filename)
+
+    def _load_real_puzzle(self, filename: str) -> None:
+        """Load a puzzle with the real deduction agent."""
+        try:
+            from griductive.engine.game_engine import GameEngine
+            agent = LogicAgent()
+            engine = GameEngine.load(filename, agent.classify)
+            self._stop_auto()
+            self.engine, self.agent = engine, agent
+            self.highlighted_cells.clear()
+            self.set_status("Ready", FG)
+            self.log(f"Loaded puzzle: {filename}")
+            self.refresh()
+        except Exception as exc:
+            self.log(f"Could not load puzzle: {type(exc).__name__}: {exc}", "err")
+            self.set_status("Could not load puzzle", RED)
 
     def on_restart(self) -> None:
         self._stop_auto()
@@ -410,15 +432,25 @@ class GriductiveGUI:
         self.refresh()
 
     def on_hint(self) -> None:
+        if self.agent is None:
+            self.log("Load a puzzle to use logic hints.", "warn")
+            return
         state = self.engine.public_state()
-        if state.unsolved:
-            first_unsolved = state.unsolved[0]
-            self.log(f"💡 Hint: Try investigating unsolved cell {first_unsolved}.")
-            self._flash_cell(first_unsolved, "hint")
-
+        hint = self.agent.hint(state)
+        if hint is None:
+            label = "INCONSISTENT" if self.agent.last_verdict is Verdict.INCONSISTENT else "No forced cell (STUCK)."
+            self.log(f"Hint: {label}", "warn")
+            self.set_status(label, YELLOW)
+            return
+        related = [clue for clue in state.revealed_clues if clue.id in hint.related_clue_ids]
+        self.highlighted_cells = {cell for clue in related for cell in clue.cells(state.n)}
+        self.log(f"Hint: {hint.cell} is {hint.verdict.value}; clues: {', '.join(hint.related_clue_ids) or 'none'}.", "hint")
+        self._flash_cell(hint.cell, "hint")
+        self._render_grid(state)
     # ── Auto solve ───────────────────────────────────────────────────────────
     def _stop_auto(self) -> None:
         self.auto_solving = False
+        self._auto_iterator = None
         self.btn_auto_solve.config(text="⚡  Auto Solve")
 
     def on_auto_solve(self) -> None:
@@ -429,28 +461,34 @@ class GriductiveGUI:
         if self.engine.is_solved():
             self.log("Puzzle already solved.")
             return
+        if self.agent is None:
+            self.log("Load a puzzle to use Auto Solve.", "warn")
+            return
         self.auto_solving = True
+        self._auto_trace = TraceLog()
+        self._auto_iterator = deduction_loop(self.engine, self.agent, self._auto_trace)
         self.btn_auto_solve.config(text="⏹  Stop")
         self._auto_step()
 
     def _auto_step(self) -> None:
         if not self.auto_solving:
             return
-        state = self.engine.public_state()
-        puzzle = getattr(self.engine, "puzzle", None)
-        if self.engine.is_solved() or not state.unsolved or puzzle is None:
+        try:
+            step = next(self._auto_iterator)
+        except StopIteration:
+            trace = self._auto_trace
+            if trace:
+                self.log(f"Auto Solve finished: {trace.terminal} ({len(trace.steps)} steps).")
+                self.set_status(trace.terminal, GREEN if trace.terminal == "SOLVED" else YELLOW)
+            self._stop_auto()
+            self.refresh()
+            return
+        except Exception as exc:
+            self.log(f"Auto Solve failed: {type(exc).__name__}: {exc}", "err")
+            self.set_status("Auto Solve error", RED)
             self._stop_auto()
             return
-
-        cell = state.unsolved[0]
-        if cell not in puzzle.solution:
-            self._stop_auto()
-            return
-        correct = puzzle.solution[cell]
-        res = self.engine.submit(cell, correct)
-        self._handle_verdict_result(cell, correct, res)
-
-        if res.outcome == VerdictOutcome.ACCEPTED and not self.engine.is_solved():
-            self.root.after(400, self._auto_step)
-        else:
-            self._stop_auto()
+        cell, status = step.verdict
+        self.log(f"Auto Solve: {cell} proved {status.value}.", "ok")
+        self.refresh()
+        self.root.after(400, self._auto_step)
