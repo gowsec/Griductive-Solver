@@ -33,8 +33,8 @@ class SemanticsVsCNFTests(unittest.TestCase):
             (Count("count_eq", Count.EQ, 1, row0), True),
             (Count("count_ge", Count.GE, 1, row0), True),
             (Count("count_le", Count.LE, 1, row0), True),
-            (Parity("parity_odd", Parity.ODD, row0), True),
-            (Parity("parity_even", Parity.EVEN, row2), True),
+            (Parity("parity_odd", row0, Parity.ODD), True),
+            (Parity("parity_even", row2, Parity.EVEN), True),
             (Compare("compare_lt", row2, Compare.LT, row0), True),
             (Compare("compare_le", row0, Compare.LE, row1), True),
             (Compare("compare_eq", row0, Compare.EQ, row1), True),
@@ -88,9 +88,9 @@ class SemanticsVsCNFTests(unittest.TestCase):
             Count("count_eq", Count.EQ, 1, row),
             Count("count_ge", Count.GE, 2, row),
             Count("count_le", Count.LE, 1, row),
-            Parity("parity_even", Parity.EVEN, row),
+            Parity("parity_even", row, Parity.EVEN),
             # Nine inputs exercise the XOR-chain encoding, including aux vars.
-            Parity("parity_odd_large", Parity.ODD, all_cells),
+            Parity("parity_odd_large", all_cells, Parity.ODD),
             # These regions overlap at A1; that cell contributes to both sums.
             *(
                 Compare(f"compare_{op.lower()}", row, op, column)

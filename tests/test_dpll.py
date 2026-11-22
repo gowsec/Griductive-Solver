@@ -16,6 +16,22 @@ def is_model_valid(clauses: list[list[int]], model: dict[int, bool]) -> bool:
             return False
     return True
 
+def test_solver_timeout_carries_stats() -> None:
+    solver = DPLLSolver()
+    with pytest.raises(SolverTimeout) as exc_info:
+        solver.solve([[1, 2], [-1, 2]], num_vars=2, timeout=-1.0)
+    assert exc_info.value.stats is not None
+    assert isinstance(exc_info.value.stats, SolverStats)
+    assert exc_info.value.stats.runtime >= 0.0
+
+
+def test_branching_skips_variables_not_in_unsatisfied_clauses() -> None:
+    # Biến 1 không xuất hiện trong clause nào; solver phải chọn thẳng biến 2
+    solver = DPLLSolver()
+    res = solver.solve([[2, 3], [-2, 3]], num_vars=3)
+    assert res.satisfiable is True
+    assert res.stats.decisions == 1
+    assert res.model is not None and res.model[3] is True
 
 class TestUnitPropagationAndConflict:
     """Test unit propagation chains and conflict detection."""

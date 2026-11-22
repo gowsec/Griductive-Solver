@@ -16,7 +16,7 @@ from griductive.model.cell import CellId, Character, Status
 from griductive.model.clue import Clue, Count, Different, Fact, Same
 from griductive.model.puzzle import PublicState, Puzzle
 from griductive.model.region import Region, RegionKind
-
+from griductive.logic.dpll import SolverTimeout
 
 def _make_state(
     n: int,
@@ -332,3 +332,32 @@ def test_agent_isolation_no_engine_or_solution_access() -> None:
                 assert node.attr != "solution", (
                     f"Forbidden '.solution' attribute access in {py_file.name}"
                 )
+
+def test_agent_timeout_propagates_with_stats() -> None:
+    n = 2
+    a1, b1 = CellId(0, 0), CellId(0, 1)
+    state = _make_state(n, clues=(Same("clue@A1", a1, b1),))
+    agent = LogicAgent(timeout=-1.0)
+
+    with pytest.raises(SolverTimeout) as exc_info:
+        agent.next_forced(state)
+    assert exc_info.value.stats is not None
+
+
+def test_hint_and_next_forced_record_consistent_last_queries() -> None:
+    n = 2
+    a1, b1, a2 = CellId(0, 0), CellId(0, 1), CellId(1, 0)
+    # A1 chưa forced (UNKNOWN), B1 bị forced (CRIMINAL) -> cả hint và next_forced đều quét A1 rồi B1
+    state = _make_state(n, clues=(Fact("clue@B1", b1, Status.CRIMINAL),))
+    agent = LogicAgent()
+
+    agent.next_forced(state)
+    nf_queries = agent.last_queries
+
+    agent.hint(state)
+    hint_queries = agent.last_queries
+
+    assert len(nf_queries) == len(hint_queries) == 4
+    assert [(q.cell, q.assumption) for q in nf_queries] == [
+        (q.cell, q.assumption) for q in hint_queries
+    ]
