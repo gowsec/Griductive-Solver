@@ -10,6 +10,14 @@ import time
 class SolverTimeout(Exception):
     """Raised when DPLL solver exceeds maximum allowed runtime."""
 
+    def __init__(
+        self,
+        message: str = "DPLL solver timed out",
+        stats: SolverStats | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.stats = stats
+
 
 @dataclass
 class SolverStats:
@@ -17,7 +25,7 @@ class SolverStats:
 
     decisions: int = 0
     propagations: int = 0
-    conflicts: int = 0 # Thêm
+    conflicts: int = 0
     backtracks: int = 0
     runtime: float = 0.0
 
@@ -71,14 +79,21 @@ class DPLLSolver:
                 return SolveResult(satisfiable=False, model=None, stats=stats)
             assignment[var] = val
 
-        satisfiable, final_assignment = self._dpll(
-            clause_list, num_vars, assignment, stats, deadline
-        )
+        try:
+            satisfiable, final_assignment = self._dpll(
+                clause_list, num_vars, assignment, stats, deadline
+            )
+        except SolverTimeout as exc:
+            stats.runtime = time.perf_counter() - start_time
+            exc.stats = stats
+            raise
 
         stats.runtime = time.perf_counter() - start_time
 
         if satisfiable:
-            full_model = {v: final_assignment.get(v, False) for v in range(1, num_vars + 1)}
+            full_model = {
+                v: final_assignment.get(v, False) for v in range(1, num_vars + 1)
+            }
             return SolveResult(satisfiable=True, model=full_model, stats=stats)
         return SolveResult(satisfiable=False, model=None, stats=stats)
 
@@ -91,22 +106,22 @@ class DPLLSolver:
         deadline: float | None,
     ) -> tuple[bool, dict[int, bool]]:
         if deadline is not None and time.perf_counter() > deadline:
-            raise SolverTimeout("DPLL solver timed out")
+            raise SolverTimeout("DPLL solver timed out", stats=stats)
 
-        assignment, clauses, conflict = self._unit_propagate(clauses, assignment, stats)
+        assignment, clauses, conflict = self._unit_propagate(
+            clauses, assignment, stats, deadline
+        )
         if conflict:
             return False, {}
 
-        if self.pure_literal:
+        if self.pure_literal and clauses:
             assignment, clauses = self._eliminate_pure_literals(clauses, assignment)
 
         if not clauses:
             return True, assignment
 
-        unassigned_var = next((v for v in range(1, num_vars + 1) if v not in assignment), None)
-        if unassigned_var is None:
-            return True, assignment
-
+        # Chỉ chọn biến có chỉ số nhỏ nhất còn xuất hiện trong các clause chưa thỏa
+        unassigned_var = min(abs(lit) for clause in clauses for lit in clause)
         stats.decisions += 1
 
         # Branch True
@@ -132,13 +147,17 @@ class DPLLSolver:
         clauses: list[tuple[int, ...]],
         assignment: dict[int, bool],
         stats: SolverStats,
+        deadline: float | None = None,
     ) -> tuple[dict[int, bool], list[tuple[int, ...]], bool]:
         current_assignment = dict(assignment)
-        current_clauses = list(clauses)
+        current_clauses = clauses
 
         while True:
+            if deadline is not None and time.perf_counter() > deadline:
+                raise SolverTimeout("DPLL solver timed out", stats=stats)
+
             new_clauses: list[tuple[int, ...]] = []
-            unit_lit: int | None = None
+            propagated = False
 
             for clause in current_clauses:
                 satisfied = False
@@ -147,8 +166,9 @@ class DPLLSolver:
                 for lit in clause:
                     var = abs(lit)
                     val = lit > 0
-                    if var in current_assignment:
-                        if current_assignment[var] == val:
+                    assigned = current_assignment.get(var)
+                    if assigned is not None:
+                        if assigned == val:
                             satisfied = True
                             break
                     else:
@@ -160,18 +180,16 @@ class DPLLSolver:
                     stats.conflicts += 1
                     return current_assignment, current_clauses, True
 
-                new_clause = tuple(unassigned_lits)
-                new_clauses.append(new_clause)
-                if len(new_clause) == 1 and unit_lit is None:
-                    unit_lit = new_clause[0]
+                if len(unassigned_lits) == 1:
+                    unit_lit = unassigned_lits[0]
+                    current_assignment[abs(unit_lit)] = unit_lit > 0
+                    stats.propagations += 1
+                    propagated = True
+                else:
+                    new_clauses.append(tuple(unassigned_lits))
 
             current_clauses = new_clauses
-
-            if unit_lit is not None:
-                stats.propagations += 1
-                var = abs(unit_lit)
-                current_assignment[var] = (unit_lit > 0)
-            else:
+            if not propagated:
                 break
 
         return current_assignment, current_clauses, False
@@ -183,7 +201,7 @@ class DPLLSolver:
     ) -> tuple[dict[int, bool], list[tuple[int, ...]]]:
         """Assign literals that appear with only one polarity in remaining clauses."""
         current_assignment = dict(assignment)
-        current_clauses = list(clauses)
+        current_clauses = clauses
 
         while True:
             polarities: dict[int, set[bool]] = {}
@@ -193,19 +211,21 @@ class DPLLSolver:
                     if var not in current_assignment:
                         polarities.setdefault(var, set()).add(lit > 0)
 
-            pure_vars = {var: next(iter(pols)) for var, pols in polarities.items() if len(pols) == 1}
+            pure_vars = {
+                var: next(iter(pols))
+                for var, pols in polarities.items()
+                if len(pols) == 1
+            }
             if not pure_vars:
                 break
 
             current_assignment.update(pure_vars)
-            next_clauses: list[tuple[int, ...]] = []
-            for clause in current_clauses:
-                if any(
-                    abs(lit) in current_assignment and current_assignment[abs(lit)] == (lit > 0)
-                    for lit in clause
-                ):
-                    continue
-                next_clauses.append(clause)
-            current_clauses = next_clauses
+            current_clauses = [
+                clause
+                for clause in current_clauses
+                if not any(
+                    current_assignment.get(abs(lit)) == (lit > 0) for lit in clause
+                )
+            ]
 
         return current_assignment, current_clauses

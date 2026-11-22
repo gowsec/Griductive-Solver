@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import time
 
-from griductive.logic.dpll import DPLLSolver
+from griductive.logic.dpll import DPLLSolver, SolverStats, SolverTimeout
 from griductive.logic.encoder import CNFEncoder, KB
 from griductive.logic.entailment import (
     Classification,
@@ -35,10 +36,12 @@ class LogicAgent:
         self,
         encoder_factory: Callable[[int], CNFEncoder] = CNFEncoder,
         solver_factory: Callable[[], DPLLSolver] = DPLLSolver,
+        timeout: float | None = None,
     ) -> None:
-        """Initialize the logic agent with configurable encoder and solver factories."""
+        """Initialize the logic agent with configurable encoder, solver, and timeout."""
         self._encoder_factory = encoder_factory
         self._solver_factory = solver_factory
+        self._timeout = timeout
         self._last_queries: tuple[SatQueryRecord, ...] = ()
         self._last_verdict: Verdict | None = None
 
@@ -52,6 +55,20 @@ class LogicAgent:
         """Return the terminal/cell verdict observed in the most recent deduction call."""
         return self._last_verdict
 
+    def _resolve_timeout(self, timeout: float | None) -> float | None:
+        return self._timeout if timeout is None else timeout
+
+    @staticmethod
+    def _attach_accumulated_stats(
+        exc: SolverTimeout, accumulated_queries: list[SatQueryRecord]
+    ) -> None:
+        combined = SolverStats()
+        for q in accumulated_queries:
+            combined.add(q.stats)
+        if exc.stats is not None:
+            combined.add(exc.stats)
+        exc.stats = combined
+
     def _compile_state(self, state: PublicState) -> tuple[KB, VarMap, DPLLSolver]:
         """Build the CNF knowledge base and variable map from ``PublicState``."""
         if not isinstance(state, PublicState):
@@ -61,34 +78,57 @@ class LogicAgent:
         solver = self._solver_factory()
         return kb, encoder.varmap, solver
 
-    def classify(self, state: PublicState, cell: CellId) -> Classification:
-        """Classify a single cell given the current ``PublicState``.
-
-        Matches the ``Oracle = Callable[[PublicState, CellId], Classification]``
-        contract required by ``GameEngine``.
-        """
+    def classify(
+        self,
+        state: PublicState,
+        cell: CellId,
+        timeout: float | None = None,
+    ) -> Classification:
+        """Classify a single cell given the current ``PublicState``."""
         kb, varmap, solver = self._compile_state(state)
-        result = entailment_classify(kb, varmap, cell, solver)
+        effective_timeout = self._resolve_timeout(timeout)
+        result = entailment_classify(kb, varmap, cell, solver, timeout=effective_timeout)
         self._last_queries = result.queries
         self._last_verdict = result.verdict
         return result
 
-    def classify_all(self, state: PublicState) -> dict[CellId, Classification]:
+    def classify_all(
+        self,
+        state: PublicState,
+        timeout: float | None = None,
+    ) -> dict[CellId, Classification]:
         """Classify all currently unsolved cells in deterministic row-major order."""
         kb, varmap, solver = self._compile_state(state)
+        effective_timeout = self._resolve_timeout(timeout)
+        deadline = (
+            time.perf_counter() + effective_timeout
+            if effective_timeout is not None
+            else None
+        )
+
         results: dict[CellId, Classification] = {}
         accumulated_queries: list[SatQueryRecord] = []
 
-        # Sort unsolved cells to guarantee deterministic row-major iteration (Principle P8)
         for cell in sorted(state.unsolved):
-            classification = entailment_classify(kb, varmap, cell, solver)
+            remaining = (deadline - time.perf_counter()) if deadline is not None else None
+            try:
+                classification = entailment_classify(
+                    kb, varmap, cell, solver, timeout=remaining
+                )
+            except SolverTimeout as exc:
+                self._last_queries = tuple(accumulated_queries)
+                self._attach_accumulated_stats(exc, accumulated_queries)
+                raise
+
             results[cell] = classification
             accumulated_queries.extend(classification.queries)
 
         self._last_queries = tuple(accumulated_queries)
         if any(c.verdict is Verdict.INCONSISTENT for c in results.values()):
             self._last_verdict = Verdict.INCONSISTENT
-        elif any(c.verdict in (Verdict.CRIMINAL, Verdict.INNOCENT) for c in results.values()):
+        elif any(
+            c.verdict in (Verdict.CRIMINAL, Verdict.INNOCENT) for c in results.values()
+        ):
             self._last_verdict = next(
                 c.verdict
                 for c in results.values()
@@ -99,18 +139,32 @@ class LogicAgent:
 
         return results
 
-    def next_forced(self, state: PublicState) -> tuple[CellId, Verdict] | None:
-        """Find the first unsolved cell (in row-major order) with a forced verdict.
-
-        Returns:
-            ``(cell, verdict)`` where ``verdict`` is ``CRIMINAL`` or ``INNOCENT``,
-            or ``None`` if no unsolved cell is logically forced (or if KB is inconsistent).
-        """
+    def next_forced(
+        self,
+        state: PublicState,
+        timeout: float | None = None,
+    ) -> tuple[CellId, Verdict] | None:
+        """Find the first unsolved cell (in row-major order) with a forced verdict."""
         kb, varmap, solver = self._compile_state(state)
+        effective_timeout = self._resolve_timeout(timeout)
+        deadline = (
+            time.perf_counter() + effective_timeout
+            if effective_timeout is not None
+            else None
+        )
         accumulated_queries: list[SatQueryRecord] = []
 
         for cell in sorted(state.unsolved):
-            classification = entailment_classify(kb, varmap, cell, solver)
+            remaining = (deadline - time.perf_counter()) if deadline is not None else None
+            try:
+                classification = entailment_classify(
+                    kb, varmap, cell, solver, timeout=remaining
+                )
+            except SolverTimeout as exc:
+                self._last_queries = tuple(accumulated_queries)
+                self._attach_accumulated_stats(exc, accumulated_queries)
+                raise
+
             accumulated_queries.extend(classification.queries)
 
             if classification.verdict is Verdict.INCONSISTENT:
@@ -127,18 +181,32 @@ class LogicAgent:
         self._last_verdict = Verdict.UNKNOWN
         return None
 
-    def hint(self, state: PublicState) -> Hint | None:
-        """Produce a hint for the first row-major forced cell without reading any solution.
-
-        Identifies the first forced unsolved cell and collects the IDs of all
-        revealed clues whose ``cells(n)`` include that cell. If no cell is forced
-        (stuck or inconsistent), returns ``None``.
-        """
+    def hint(
+        self,
+        state: PublicState,
+        timeout: float | None = None,
+    ) -> Hint | None:
+        """Produce a hint for the first row-major forced cell without reading any solution."""
         kb, varmap, solver = self._compile_state(state)
+        effective_timeout = self._resolve_timeout(timeout)
+        deadline = (
+            time.perf_counter() + effective_timeout
+            if effective_timeout is not None
+            else None
+        )
         accumulated_queries: list[SatQueryRecord] = []
 
         for cell in sorted(state.unsolved):
-            classification = entailment_classify(kb, varmap, cell, solver)
+            remaining = (deadline - time.perf_counter()) if deadline is not None else None
+            try:
+                classification = entailment_classify(
+                    kb, varmap, cell, solver, timeout=remaining
+                )
+            except SolverTimeout as exc:
+                self._last_queries = tuple(accumulated_queries)
+                self._attach_accumulated_stats(exc, accumulated_queries)
+                raise
+
             accumulated_queries.extend(classification.queries)
 
             if classification.verdict is Verdict.INCONSISTENT:
@@ -152,7 +220,7 @@ class LogicAgent:
                     for clue in state.revealed_clues
                     if cell in clue.cells(state.n)
                 )
-                self._last_queries = classification.queries
+                self._last_queries = tuple(accumulated_queries)
                 self._last_verdict = classification.verdict
                 return Hint(
                     cell=cell,

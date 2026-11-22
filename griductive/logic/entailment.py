@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import time
 
-from griductive.logic.dpll import DPLLSolver, SolverStats
+from griductive.logic.dpll import DPLLSolver, SolverStats, SolverTimeout
 from griductive.logic.encoder import KB
 from griductive.logic.varmap import VarMap
 from griductive.model.cell import CellId
@@ -41,6 +42,7 @@ class Classification:
 def check_kb_consistency(
     kb: KB,
     solver: DPLLSolver | None = None,
+    timeout: float | None = None,
 ) -> SatQueryRecord:
     """Execute an assumption-free SAT(KB) check to verify KB consistency."""
     active_solver = solver if solver is not None else DPLLSolver()
@@ -48,6 +50,7 @@ def check_kb_consistency(
         clauses=kb.clauses,
         num_vars=kb.num_vars,
         assumptions=(),
+        timeout=timeout,
     )
     return SatQueryRecord(
         cell=None,
@@ -62,25 +65,9 @@ def classify(
     varmap: VarMap,
     cell: CellId,
     solver: DPLLSolver | None = None,
+    timeout: float | None = None,
 ) -> Classification:
-    """Determine the entailed status of ``cell`` from ``kb`` via refutation.
-
-    Tests whether ``cell`` can be INNOCENT (``assumption = -v``) and whether
-    it can be CRIMINAL (``assumption = +v``), where ``v = varmap.var(cell)``:
-      1. Both UNSAT -> ``Verdict.INCONSISTENT`` (``KB`` itself is unsatisfiable).
-      2. ``-v`` is UNSAT and ``+v`` is SAT -> ``Verdict.CRIMINAL`` (``KB |= C_i``).
-      3. ``-v`` is SAT and ``+v`` is UNSAT -> ``Verdict.INNOCENT`` (``KB |= ~C_i``).
-      4. Both SAT -> ``Verdict.UNKNOWN``.
-
-    Args:
-        kb: Compiled CNF knowledge base from ``CNFEncoder.build_kb``.
-        varmap: Primary variable mapping for the grid.
-        cell: The target cell to classify.
-        solver: DPLL solver instance (creates a default ``DPLLSolver()`` if None).
-
-    Returns:
-        A ``Classification`` with the resulting ``Verdict`` and recorded queries.
-    """
+    """Determine the entailed status of ``cell`` from ``kb`` via refutation."""
     if not isinstance(kb, KB):
         raise TypeError("kb must be a KB instance")
     if not isinstance(varmap, VarMap):
@@ -92,12 +79,19 @@ def classify(
 
     var = varmap.var(cell)
     active_solver = solver if solver is not None else DPLLSolver()
+    deadline = (time.perf_counter() + timeout) if timeout is not None else None
+
+    def _remaining() -> float | None:
+        if deadline is None:
+            return None
+        return deadline - time.perf_counter()
 
     # Query 1: SAT(KB ^ ~C_i) -> test if cell can be INNOCENT (-var)
     res_neg = active_solver.solve(
         clauses=kb.clauses,
         num_vars=kb.num_vars,
         assumptions=(-var,),
+        timeout=_remaining(),
     )
     q_neg = SatQueryRecord(
         cell=cell,
@@ -107,11 +101,21 @@ def classify(
     )
 
     # Query 2: SAT(KB ^ C_i) -> test if cell can be CRIMINAL (+var)
-    res_pos = active_solver.solve(
-        clauses=kb.clauses,
-        num_vars=kb.num_vars,
-        assumptions=(var,),
-    )
+    try:
+        res_pos = active_solver.solve(
+            clauses=kb.clauses,
+            num_vars=kb.num_vars,
+            assumptions=(var,),
+            timeout=_remaining(),
+        )
+    except SolverTimeout as exc:
+        combined = SolverStats()
+        combined.add(q_neg.stats)
+        if exc.stats is not None:
+            combined.add(exc.stats)
+        exc.stats = combined
+        raise
+
     q_pos = SatQueryRecord(
         cell=cell,
         assumption=var,
