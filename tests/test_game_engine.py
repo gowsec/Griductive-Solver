@@ -86,6 +86,18 @@ class GameEngineTests(unittest.TestCase):
         self.assertEqual(engine.public_state().proved[cell], Status.CRIMINAL)
         self.assertEqual(len(oracle.calls), 1)
 
+    def test_reveal_uses_oracle_and_submit_remains_compatible(self) -> None:
+        puzzle = make_puzzle()
+        oracle = FakeOracle(FakeVerdict.INNOCENT)
+        engine = GameEngine(puzzle, oracle)
+        cell = CellId(0, 1)
+
+        result = engine.reveal(cell, Status.INNOCENT)
+
+        self.assertEqual(result.outcome, VerdictOutcome.ACCEPTED)
+        self.assertEqual(result.revealed_clue, puzzle.clues[cell])
+        self.assertEqual(engine.public_state().proved[cell], Status.INNOCENT)
+
     def test_unknown_inconsistent_and_contradicted_do_not_change_state(self) -> None:
         scenarios = (
             (FakeVerdict.UNKNOWN, Status.CRIMINAL, VerdictOutcome.NOT_PROVABLE),
