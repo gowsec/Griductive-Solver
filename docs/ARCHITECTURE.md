@@ -3,7 +3,7 @@
 Tài liệu kiến trúc và **hợp đồng interface** của Griductive Solver.
 Mọi thay đổi interface phải qua **đề xuất → Leader duyệt → thông báo cả nhóm**.
 
-- Trạng thái: `FROZEN`
+- Trạng thái: `FROZEN` (đã đồng bộ với code ngày 22/11/2026; xem mục 13)
 - Chủ sở hữu tài liệu: Quang
 
 ---
@@ -61,7 +61,7 @@ Mọi thay đổi interface phải qua **đề xuất → Leader duyệt → th�
 
 ```
 model  ←  io
-model  ←  logic   (varmap, semantics, cardinality, encoder, dpll, entailment, agent, uniqueness, trace)
+model  ←  logic   (varmap, semantics, encoder, dpll, entailment, agent, uniqueness, trace)
 model  ←  engine
 engine, logic  ←  orchestration  ←  gui, experiments  ←  main.py
 ```
@@ -74,15 +74,16 @@ engine, logic  ←  orchestration  ←  gui, experiments  ←  main.py
 
 | Đường dẫn | Chủ sở hữu | Nội dung |
 |---|:---:|---|
-| `docs/`, `main.py`, `tests/` (khung) | M1 | tài liệu, entry point, CI |
+| `docs/`, `main.py`, `tests/` (khung) | M1 | tài liệu, entry point (`gui`, `solve`, `experiment`, `cli`, `test`), CI |
 | `griductive/model/` | M2 | `cell.py`, `region.py`, `clue.py`, `puzzle.py` |
 | `griductive/io/loader.py` | M2 | JSON → `Puzzle`, validate |
-| `griductive/engine/game_engine.py` | M2 | `GameEngine`, `VerdictResult` |
+| `griductive/engine/game_engine.py`, `dummy_engine.py` | M2 | `GameEngine`, `VerdictResult`; engine giả cho GUI/test |
 | `puzzles/` | M2 | bộ puzzle chuẩn, lỗi, stress |
-| `griductive/logic/varmap.py`, `semantics.py`, `cardinality.py`, `encoder.py` | M3 | CNF |
+| `griductive/logic/varmap.py`, `semantics.py`, `encoder.py` | M3 | CNF (mã hóa ràng buộc đếm nằm trong `encoder.py`, không có `cardinality.py` riêng) |
 | `griductive/logic/dpll.py`, `entailment.py`, `agent.py` | M4 | SAT, suy diễn |
 | `griductive/logic/uniqueness.py`, `trace.py` | M5 | duy nhất, trace |
 | `griductive/orchestration/runner_loop.py` | M5 | vòng lặp suy diễn (generator) |
+| `griductive/orchestration/integration_cli.py` | M1 | CLI tích hợp loader → encoder → DPLL (`main.py cli`) |
 | `griductive/gui/` | M5 | Tkinter |
 | `griductive/experiments/` | M5 | runner, bảng, biểu đồ |
 
@@ -152,7 +153,7 @@ class Clue(ABC):
     @abstractmethod
     def cells(self, n: int) -> tuple[CellId, ...]: ...   # ô được nhắc tới/đếm (GUI highlight)
     @abstractmethod
-    def describe(self) -> str: ...                       # câu hiển thị
+    def describe(self) -> str: ...                       # câu hiển thị (M2 sẽ thêm tham số tùy chọn `names`, tương thích ngược; xem mục 13)
 ```
 
 | Lớp | Trường | Logic |
@@ -240,7 +241,7 @@ class CNFEncoder:
 ```
 
 - Validate tham số clue; lỗi → `ClueError`.
-- Nếu `encoding="combinatorial"` mà vùng quá lớn (ngưỡng cấu hình, ví dụ `C(|R|, k+1) > 50 000`), tự chuyển sang `sequential` và ghi cảnh báo.
+- Cách mã hóa do tham số `encoding` quyết định; **encoder không tự chuyển** sang `sequential`. Với vùng lớn (ví dụ `Count EQ 12` trên 25 ô, combinatorial sinh khoảng 9,6 triệu clause) phải chọn `encoding="sequential"` chủ động.
 - Công thức chi tiết: [`CNF_MAPPING.md`](CNF_MAPPING.md).
 
 ### 5.4 DPLL (M4) — `dpll.py`
@@ -250,8 +251,13 @@ class CNFEncoder:
 class SolverStats:
     decisions: int = 0
     propagations: int = 0
+    conflicts: int = 0            # số lần phát hiện xung đột
     backtracks: int = 0
     runtime: float = 0.0          # giây
+    def add(self, other: "SolverStats") -> None: ...   # cộng dồn thống kê nhiều lần gọi
+
+class SolverTimeout(Exception):
+    stats: SolverStats | None     # thống kê đã thu được đến lúc dừng
 
 @dataclass
 class SolveResult:
@@ -260,6 +266,7 @@ class SolveResult:
     stats: SolverStats
 
 class DPLLSolver:
+    def __init__(self, pure_literal: bool = False): ...
     def solve(self,
               clauses: Sequence[Sequence[int]],
               num_vars: int,
@@ -268,9 +275,9 @@ class DPLLSolver:
 ```
 
 - `assumptions` coi như unit clause **tạm thời**, không sửa `clauses`.
-- Chọn biến: **biến chưa gán có chỉ số nhỏ nhất**, thử `True` rồi `False` (P8).
+- Chọn biến: **biến có chỉ số nhỏ nhất trong số các biến còn xuất hiện trong clause chưa thỏa**, thử `True` rồi `False` (P8).
 - Bắt buộc: unit propagation, phát hiện xung đột, backtracking. Pure-literal: tùy chọn (bật bằng cờ).
-- `timeout` quá hạn → raise `SolverTimeout` (runner ghi `TIMEOUT`).
+- `timeout` quá hạn → raise `SolverTimeout` mang theo `stats` đã thu; `LogicAgent`/`classify` cộng dồn stats của các lần gọi trước rồi ném lại; runner ghi `TIMEOUT`.
 
 ### 5.5 Entailment và Agent (M4) — `entailment.py`, `agent.py`
 
@@ -293,25 +300,35 @@ class Classification:
     verdict: Verdict
     queries: tuple[SatQueryRecord, ...]
 
-def classify(kb: KB, varmap: VarMap, cell: CellId, solver: DPLLSolver) -> Classification
+def classify(kb: KB, varmap: VarMap, cell: CellId,
+             solver: DPLLSolver | None = None, timeout: float | None = None) -> Classification
+def check_kb_consistency(kb: KB, solver=None, timeout=None) -> SatQueryRecord   # SAT(KB), công cụ riêng
 ```
 
 Quy trình `classify`:
 
-1. `SAT(KB)` sai → `INCONSISTENT`.
-2. `SAT(KB ∧ ¬Cᵢ)` sai → `CRIMINAL`.
-3. `SAT(KB ∧ Cᵢ)` sai → `INNOCENT`.
-4. Còn lại → `UNKNOWN`.
+`classify` luôn thực hiện **hai** truy vấn SAT (không có truy vấn `SAT(KB)` riêng):
+
+1. `SAT(KB ∧ ¬Cᵢ)` và `SAT(KB ∧ Cᵢ)` đều sai → `INCONSISTENT` (KB vô nghiệm).
+2. Chỉ `SAT(KB ∧ ¬Cᵢ)` sai → `CRIMINAL`.
+3. Chỉ `SAT(KB ∧ Cᵢ)` sai → `INNOCENT`.
+4. Cả hai đúng → `UNKNOWN`.
+
+Vì vậy mỗi ô được phân loại tốn đúng 2 `SatQueryRecord`.
 
 ```python
 class LogicAgent:
-    def __init__(self, encoder_factory=..., solver_factory=...): ...
-    def classify(self, state: PublicState, cell: CellId) -> Classification   # oracle cho engine
-    def classify_all(self, state: PublicState) -> dict[CellId, Classification]
-    def next_forced(self, state: PublicState) -> tuple[CellId, Verdict] | None
-        # ô forced đầu tiên theo row-major; None nếu không có
-    def hint(self, state: PublicState) -> Hint
-        # ô forced + clue đã lộ liên quan; KHÔNG đọc solution
+    def __init__(self, encoder_factory=CNFEncoder, solver_factory=DPLLSolver, timeout: float | None = None): ...
+    last_queries: tuple[SatQueryRecord, ...]   # query của lần gọi gần nhất (cộng dồn qua các ô đã duyệt)
+    last_verdict: Verdict | None
+    def classify(self, state: PublicState, cell: CellId, timeout: float | None = None) -> Classification   # oracle cho engine
+    def classify_all(self, state: PublicState, timeout: float | None = None) -> dict[CellId, Classification]
+    def next_forced(self, state: PublicState, timeout: float | None = None) -> tuple[CellId, Verdict] | None
+        # ô forced đầu tiên theo row-major; None nếu không có hoặc KB INCONSISTENT
+    def hint(self, state: PublicState, timeout: float | None = None) -> Hint | None
+        # ô forced + clue đã lộ liên quan; None nếu kẹt/INCONSISTENT; KHÔNG đọc solution
+        # Hint.queries chỉ gồm 2 query của ô được chọn; last_queries gồm mọi query đã chạy
+    # timeout là tổng thời gian cho cả lần gọi; quá hạn → SolverTimeout (kèm stats cộng dồn)
 ```
 
 ```python
@@ -333,7 +350,9 @@ class UniquenessReport:
     models: tuple[Mapping[CellId, Status], ...]
     stats: SolverStats
 
-def check_uniqueness(clues: Sequence[Clue], n: int, solver: DPLLSolver, encoder: CNFEncoder) -> UniquenessReport
+def check_uniqueness(state_or_clues: PublicState | Sequence[Clue], n: int | None = None,
+                     solver: DPLLSolver | None = None, encoder: CNFEncoder | None = None) -> UniquenessReport
+def check_uniqueness_cnf(clauses, n_primary: int, num_vars: int, solver=None) -> UniquenessReport   # trên CNF số nguyên
 ```
 
 Kiểm tra trên **toàn bộ clue của puzzle** (kể cả clue chưa lộ, nên hàm này là công cụ riêng, không nằm trong luồng của agent). Tìm một model, thêm blocking clause (chỉ trên biến chính), tìm tiếp; dừng khi đủ 2 model.
@@ -351,7 +370,8 @@ class TraceStep:
 
 class TraceLog:
     steps: list[TraceStep]
-    terminal: Literal["SOLVED", "STUCK", "INCONSISTENT", "ERROR"]
+    terminal: Literal["SOLVED", "STUCK", "INCONSISTENT", "TIMEOUT", "ERROR"]   # mặc định "STUCK"
+    error: str                                    # thông điệp lỗi (rỗng nếu không có)
     def to_json(self) -> str: ...
     def to_csv(self) -> str: ...
 ```
@@ -378,8 +398,10 @@ Oracle = Callable[[PublicState, CellId], Classification]
 
 class GameEngine:
     def __init__(self, puzzle: Puzzle, oracle: Oracle): ...
+    n: int                                          # property: kích thước lưới
     def public_state(self) -> PublicState
-    def submit(self, cell: CellId, status: Status) -> VerdictResult
+    def reveal(self, cell: CellId, status: Status) -> VerdictResult   # thực thi logic bên dưới
+    def submit(self, cell: CellId, status: Status) -> VerdictResult   # giữ tương thích, gọi reveal
     def is_solved(self) -> bool
     def restart(self) -> None
     @classmethod
@@ -401,14 +423,18 @@ else: return CONTRADICTED                                # trạng thái game kh
 
 Khi từ chối, engine **không** để lộ clue ẩn và **không** thay đổi trạng thái.
 
+Trước khi gọi oracle, `reveal` raise `ValueError` nếu ô không thuộc puzzle, ô đã được giải, hoặc `status` không phải `Status`. Verdict ngoài `CRIMINAL/INNOCENT/UNKNOWN/INCONSISTENT` cũng raise `ValueError`.
+
 ---
 
 ## 7. Vòng lặp suy diễn (`orchestration/runner_loop.py`, M5)
 
 ```python
-def deduction_loop(engine: GameEngine, agent: LogicAgent) -> Iterator[TraceStep]:
+def deduction_loop(engine: GameEngine, agent: LogicAgent,
+                   trace: TraceLog | None = None) -> Iterator[TraceStep]:
     """Generator: mỗi lần yield là một bước (GUI dùng để animate từng lần lật thẻ).
-    Kết thúc khi SOLVED / STUCK / INCONSISTENT; trạng thái cuối nằm trong TraceLog."""
+    Kết thúc khi SOLVED / STUCK / INCONSISTENT / ERROR; trạng thái cuối ghi vào `trace`
+    (tạo mới nếu không truyền). Hiện chưa có `timeout` riêng (M5 sẽ bổ sung, ghi TIMEOUT)."""
 ```
 
 ```
@@ -481,10 +507,11 @@ Các `type` hợp lệ: `FACT`, `SAME`, `DIFFERENT`, `EXACTLY`, `AT_LEAST`, `AT_
 |---|---|---|
 | `PuzzleError` | JSON sai schema/giá trị | `loader` |
 | `ClueError` | tham số clue không hợp lệ (k ngoài `[0, \|R\|]`, ô không tồn tại) | `encoder`, `loader` |
-| `SolverTimeout` | DPLL quá `timeout` | `dpll` |
+| `SolverTimeout` | DPLL quá `timeout` (mang `stats`) | `dpll` |
+| `ValueError` | `GameEngine.reveal`: ô ngoài puzzle, ô đã giải, `status` sai kiểu | `game_engine` |
 | `InconsistentKB` | KB UNSAT khi cần kết luận | `entailment` (trả `Verdict.INCONSISTENT`, không raise trong luồng chính) |
 
-Terminal states của một lần giải: `SOLVED`, `STUCK` (còn ô chưa giải nhưng không có verdict forced), `INCONSISTENT`, `ERROR`/`TIMEOUT`.
+Terminal states của một lần giải: `SOLVED`, `STUCK` (còn ô chưa giải nhưng không có verdict forced), `INCONSISTENT`, `TIMEOUT` (DPLL hoặc vòng lặp quá hạn), `ERROR` (ngoại lệ khác, hoặc engine từ chối verdict mà agent đã chứng minh).
 
 ---
 
@@ -516,4 +543,9 @@ Trong lúc chờ: M4 test DPLL bằng CNF viết tay (list số nguyên); M5 dù
 
 | Ngày | Thay đổi | Người đề xuất | Duyệt bởi |
 |---|---|---|---|
-| _điền khi có thay đổi_ | | | |
+| 22/11/2026 | Thêm `GameEngine.reveal` (`submit` gọi `reveal`) và property `n` | M2 | M1 |
+| 22/11/2026 | `SolverStats.conflicts`; `SolverTimeout.stats`; chọn biến chỉ trong clause chưa thỏa; `timeout` cho `LogicAgent` và các hàm `classify*`/`next_forced`/`hint`; `hint` trả `Hint \| None` | M4 | M1 |
+| 22/11/2026 | `TraceLog.terminal` thêm `TIMEOUT`, thêm trường `error`; `deduction_loop` nhận tham số `trace` | M5 | M1 |
+| 22/11/2026 | `check_uniqueness` nhận `PublicState` hoặc danh sách clue, thêm `check_uniqueness_cnf` | M5 | M1 |
+| 22/11/2026 | Gộp mã hóa đếm vào `encoder.py` (không có `cardinality.py`); encoder không tự chuyển sang sequential | M3 | M1 |
+| _chờ merge_ | `Clue.describe(names=None)` thêm tham số tùy chọn, tương thích ngược | M2 | M1 |
