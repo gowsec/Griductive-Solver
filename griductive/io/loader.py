@@ -8,6 +8,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+from griductive.logic.semantics import holds
 from griductive.model.cell import CellId, Character, Status
 from griductive.model.clue import Clue, Compare, Count, Different, Fact, Parity, Same
 from griductive.model.puzzle import Puzzle
@@ -96,7 +97,7 @@ def load_puzzle(path: str | Path) -> Puzzle:
         raise PuzzleError("$.initial_revealed: duplicate cell ID")
 
     for cell, clue in clues.items():
-        if not _clue_holds(clue, solution, n):
+        if not holds(clue, solution, n):
             raise PuzzleError(
                 f"$.clues.{cell}: clue is not satisfied by the supplied solution"
             )
@@ -293,36 +294,3 @@ def _parse_region(value: Any, path: str, n: int) -> Region:
     except ValueError as error:
         raise PuzzleError(f"{path}: {error}") from error
     return region
-
-
-def _clue_holds(clue: Clue, solution: Mapping[CellId, Status], n: int) -> bool:
-    def is_criminal(cell: CellId) -> bool:
-        return solution[cell] is Status.CRIMINAL
-
-    if isinstance(clue, Fact):
-        return solution[clue.cell] is clue.status
-    if isinstance(clue, Same):
-        return is_criminal(clue.a) == is_criminal(clue.b)
-    if isinstance(clue, Different):
-        return is_criminal(clue.a) != is_criminal(clue.b)
-    if isinstance(clue, Count):
-        count = sum(is_criminal(cell) for cell in clue.cells(n))
-        return {
-            Count.EQ: count == clue.k,
-            Count.GE: count >= clue.k,
-            Count.LE: count <= clue.k,
-        }[clue.op]
-    if isinstance(clue, Parity):
-        count = sum(is_criminal(cell) for cell in clue.cells(n))
-        return (count % 2 == 0) == (clue.parity == Parity.EVEN)
-    if isinstance(clue, Compare):
-        left_count = sum(is_criminal(cell) for cell in RegionResolver.cells(clue.left, n))
-        right_count = sum(is_criminal(cell) for cell in RegionResolver.cells(clue.right, n))
-        return {
-            Compare.LT: left_count < right_count,
-            Compare.LE: left_count <= right_count,
-            Compare.EQ: left_count == right_count,
-            Compare.GE: left_count >= right_count,
-            Compare.GT: left_count > right_count,
-        }[clue.op]
-    raise PuzzleError(f"unsupported clue implementation: {type(clue).__name__}")

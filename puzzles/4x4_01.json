@@ -21,38 +21,63 @@
   "solution": {
     "A1": "CRIMINAL",
     "B1": "INNOCENT",
-    "C1": "INNOCENT",
-    "D1": "CRIMINAL",
-    "A2": "INNOCENT",
+    "C1": "CRIMINAL",
+    "D1": "INNOCENT",
+    "A2": "CRIMINAL",
     "B2": "INNOCENT",
     "C2": "CRIMINAL",
-    "D2": "CRIMINAL",
-    "A3": "INNOCENT",
-    "B3": "CRIMINAL",
-    "C3": "INNOCENT",
+    "D2": "INNOCENT",
+    "A3": "CRIMINAL",
+    "B3": "INNOCENT",
+    "C3": "CRIMINAL",
     "D3": "INNOCENT",
     "A4": "CRIMINAL",
-    "B4": "CRIMINAL",
-    "C4": "INNOCENT",
-    "D4": "CRIMINAL"
+    "B4": "INNOCENT",
+    "C4": "CRIMINAL",
+    "D4": "INNOCENT"
   },
   "initial_revealed": ["A1"],
   "clues": {
-    "A1": {"type": "FACT", "cell": "B1", "status": "INNOCENT"},
-    "B1": {"type": "SAME", "a": "B1", "b": "C1"},
-    "C1": {"type": "DIFFERENT", "a": "C1", "b": "D1"},
-    "D1": {"type": "FACT", "cell": "A2", "status": "INNOCENT"},
-    "A2": {"type": "SAME", "a": "A2", "b": "B2"},
+    "A1": {
+      "type": "COMPARE",
+      "op": "GT",
+      "left": {"kind": "CELLS", "cells": ["A1"]},
+      "right": {"kind": "CELLS", "cells": ["B1"]}
+    },
+    "B1": {
+      "type": "AT_LEAST",
+      "k": 2,
+      "region": {"kind": "CELLS", "cells": ["A1", "B1", "C1"]}
+    },
+    "C1": {
+      "type": "AT_MOST",
+      "k": 2,
+      "region": {"kind": "CELLS", "cells": ["A1", "B1", "C1", "D1"]}
+    },
+    "D1": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "CELLS", "cells": ["B1", "C1", "D1", "A2"]}
+    },
+    "A2": {
+      "type": "PARITY",
+      "parity": "EVEN",
+      "region": {"kind": "CELLS", "cells": ["C1", "D1", "A2", "B2"]}
+    },
     "B2": {"type": "DIFFERENT", "a": "B2", "b": "C2"},
-    "C2": {"type": "SAME", "a": "C2", "b": "D2"},
-    "D2": {"type": "FACT", "cell": "A3", "status": "INNOCENT"},
+    "C2": {"type": "DIFFERENT", "a": "C2", "b": "D2"},
+    "D2": {"type": "DIFFERENT", "a": "D2", "b": "A3"},
     "A3": {"type": "DIFFERENT", "a": "A3", "b": "B3"},
     "B3": {"type": "DIFFERENT", "a": "B3", "b": "C3"},
-    "C3": {"type": "SAME", "a": "C3", "b": "D3"},
-    "D3": {"type": "FACT", "cell": "A4", "status": "CRIMINAL"},
-    "A4": {"type": "SAME", "a": "A4", "b": "B4"},
+    "C3": {"type": "DIFFERENT", "a": "C3", "b": "D3"},
+    "D3": {"type": "DIFFERENT", "a": "D3", "b": "A4"},
+    "A4": {"type": "DIFFERENT", "a": "A4", "b": "B4"},
     "B4": {"type": "DIFFERENT", "a": "B4", "b": "C4"},
     "C4": {"type": "DIFFERENT", "a": "C4", "b": "D4"},
-    "D4": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"}
+    "D4": {
+      "type": "PARITY",
+      "parity": "ODD",
+      "region": {"kind": "CELLS", "cells": ["A1", "B1", "D4"]}
+    }
   }
 }

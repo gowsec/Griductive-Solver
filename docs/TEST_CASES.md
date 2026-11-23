@@ -268,7 +268,7 @@ Nội dung từng puzzle do M2 thiết kế; **kỳ vọng** dưới đây là h
 | `4x4_01.json` | 4×4 | Chuỗi suy diễn FACT/SAME/DIFFERENT; chỉ lật sẵn A1 | `UNIQUE`, `SOLVED` |
 | `4x4_02.json` | 4×4 | Cần nhiều "đợt" lật (suy diễn bắc cầu) | `UNIQUE`, `SOLVED` |
 | `4x4_03.json` | 4×4 | Có cả `PARITY` và `COMPARE` | `UNIQUE`, `SOLVED` |
-| `5x5_01.json` | 5×5 | Clue đếm hàng/cột 5 ô; lật sẵn cột A để kiểm tra suy diễn trên lưới lớn | `UNIQUE`, `SOLVED` |
+| `5x5_01.json` | 5×5 | Chỉ lật sẵn A1; clue vùng 6/25 ô và liên kết tuần tự tạo nhiều wave suy diễn | `UNIQUE`, `SOLVED`, DPLL có rẽ nhánh |
 
 Các puzzle chuẩn được kiểm uniqueness bằng M5 (`check_uniqueness`). Puzzle 3×3
 và 4×4 còn được đối chiếu vét cạn qua `semantics.holds` khi module semantics
@@ -278,14 +278,14 @@ có mặt; test nằm ở `tests/test_sample_puzzles.py`.
 
 | File | Lỗi | Kỳ vọng |
 |---|---|---|
-| `bad_contradiction.json` | Clue `FACT` của A1 mâu thuẫn với solution đã khai báo | Loader: `PuzzleError` |
+| `bad_contradiction.json` | Hai clue `FACT` gán trạng thái đối nghịch cho A1 | Loader: `PuzzleError` tại clue thứ hai |
 | `bad_not_unique.json` | Thiếu clue, có ≥ 2 lời giải đầy đủ | `check_uniqueness`: `NOT_UNIQUE`; agent kết thúc `STUCK` (không đoán) |
 | `bad_stuck.json` | Hợp lệ (duy nhất) nhưng suy diễn từ trạng thái đầu không tiến được | Agent: `STUCK`; không lật thẻ nào ngoài thẻ ban đầu |
 | `bad_invalid_k.json` | `EXACTLY` với `k > |R|` | Loader: `PuzzleError` |
 | `bad_missing_cell.json` | Thiếu clue của một ô | Loader: `PuzzleError` |
 | `bad_unknown_cell.json` | Clue nhắc ô `"Z9"` | Loader: `PuzzleError` |
 | `bad_schema.json` | `type` không tồn tại / thiếu trường | Loader: `PuzzleError` |
-| `bad_solution_mismatch.json` | `solution` không thỏa một clue | Loader: `PuzzleError` |
+| `bad_solution_mismatch.json` | Một clue `FACT` không khớp với solution | Loader: `PuzzleError` |
 
 > Cần phân biệt: `bad_not_unique` và `bad_stuck` đều dẫn đến `STUCK`, nhưng uniqueness check cho kết quả khác nhau (`NOT_UNIQUE` và `UNIQUE`). Cả hai đều phải có test riêng.
 

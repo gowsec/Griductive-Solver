@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import ClassVar
 
 from griductive.model.cell import CellId, Status
-from griductive.model.region import Region, RegionResolver
+from griductive.model.region import Region, RegionKind, RegionResolver
 
 
 class Clue(ABC):
@@ -20,8 +21,49 @@ class Clue(ABC):
         """Return the cells referenced by this clue for highlighting."""
 
     @abstractmethod
-    def describe(self) -> str:
-        """Return a human-readable description of this clue."""
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
+        """Return a human-readable description, using cell names when provided."""
+
+
+def _cell_name(cell: CellId, names: Mapping[CellId, str] | None) -> str:
+    if names is not None:
+        name = names.get(cell)
+        if isinstance(name, str) and name.strip():
+            return f"{name} ({cell})"
+    return str(cell)
+
+
+def _region_name(region: Region, names: Mapping[CellId, str] | None) -> str:
+    if region.kind is RegionKind.ROW and region.row is not None:
+        label = f"row {region.row + 1}"
+        members = sorted(cell for cell in (names or {}) if cell.row == region.row)
+    elif region.kind is RegionKind.COL and region.col is not None:
+        label = f"column {str(CellId(0, region.col))[:-1]}"
+        members = sorted(cell for cell in (names or {}) if cell.col == region.col)
+    elif region.kind is RegionKind.NEIGHBORS and region.center is not None:
+        label = f"neighbors of {_cell_name(region.center, names)}"
+        members = sorted(
+            cell
+            for cell in (names or {})
+            if abs(cell.row - region.center.row) <= 1
+            and abs(cell.col - region.center.col) <= 1
+            and cell != region.center
+        )
+    elif region.kind is RegionKind.CELLS:
+        members = sorted(region.cells)
+        label = (
+            "cells"
+            if names is not None
+            else "cells " + ", ".join(str(cell) for cell in region.cells)
+        )
+    else:
+        label = region.kind.value.lower()
+        members = []
+
+    if names is not None and members:
+        labels = ", ".join(_cell_name(cell, names) for cell in members)
+        return f"{label} ({labels})"
+    return label
 
 
 @dataclass(frozen=True)
@@ -36,9 +78,9 @@ class Fact(Clue):
         """Return the single cell referenced by this fact."""
         return (self.cell,)
 
-    def describe(self) -> str:
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
         """Describe the status asserted by this fact."""
-        return f"{self.cell} is {self.status.value}"
+        return f"{_cell_name(self.cell, names)} is {self.status.value}"
 
 
 @dataclass(frozen=True)
@@ -53,9 +95,12 @@ class Same(Clue):
         """Return the two cells referenced by this clue."""
         return (self.a, self.b)
 
-    def describe(self) -> str:
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
         """Describe the equality relation between the two cells."""
-        return f"{self.a} and {self.b} have the same status"
+        return (
+            f"{_cell_name(self.a, names)} and {_cell_name(self.b, names)} "
+            "have the same status"
+        )
 
 
 @dataclass(frozen=True)
@@ -70,9 +115,12 @@ class Different(Clue):
         """Return the two cells referenced by this clue."""
         return (self.a, self.b)
 
-    def describe(self) -> str:
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
         """Describe the inequality relation between the two cells."""
-        return f"{self.a} and {self.b} have different statuses"
+        return (
+            f"{_cell_name(self.a, names)} and {_cell_name(self.b, names)} "
+            "have different statuses"
+        )
 
 
 @dataclass(frozen=True)
@@ -92,14 +140,15 @@ class Count(Clue):
         """Return all cells counted by this clue."""
         return RegionResolver.cells(self.region, n)
 
-    def describe(self) -> str:
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
         """Describe the required criminal count in the region."""
+        noun = "criminal" if self.k == 1 else "criminals"
         wording = {
-            self.EQ: f"exactly {self.k}",
-            self.GE: f"at least {self.k}",
-            self.LE: f"at most {self.k}",
+            self.EQ: f"exactly {self.k} {noun}",
+            self.GE: f"at least {self.k} {noun}",
+            self.LE: f"at most {self.k} {noun}",
         }.get(self.op, f"{self.op} {self.k}")
-        return f"{wording} criminal(s) in {self.region.kind.value}"
+        return f"{wording} in {_region_name(self.region, names)}"
 
 
 @dataclass(frozen=True)
@@ -117,9 +166,12 @@ class Parity(Clue):
         """Return all cells counted by this parity clue."""
         return RegionResolver.cells(self.region, n)
 
-    def describe(self) -> str:
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
         """Describe the required parity in the region."""
-        return f"An {self.parity.lower()} number of criminals in {self.region.kind.value}"
+        return (
+            f"An {self.parity.lower()} number of criminals in "
+            f"{_region_name(self.region, names)}"
+        )
 
 
 @dataclass(frozen=True)
@@ -150,7 +202,7 @@ class Compare(Clue):
         """Return the unique cells in both compared regions, row-major."""
         return tuple(sorted(set(self.left_cells(n)) | set(self.right_cells(n))))
 
-    def describe(self) -> str:
+    def describe(self, names: Mapping[CellId, str] | None = None) -> str:
         """Describe the comparison between criminal counts."""
         symbol = {
             self.LT: "<",
@@ -160,6 +212,6 @@ class Compare(Clue):
             self.GT: ">",
         }.get(self.op, self.op)
         return (
-            f"Criminal count in {self.left.kind.value} {symbol} "
-            f"criminal count in {self.right.kind.value}"
+            f"Criminal count in {_region_name(self.left, names)} {symbol} "
+            f"criminal count in {_region_name(self.right, names)}"
         )

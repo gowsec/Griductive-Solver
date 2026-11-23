@@ -202,8 +202,14 @@ class GriductiveGUI:
         self._render_grid(state)
 
         self.clue_listbox.delete(0, tk.END)
+        names = {
+            cell: character.name
+            for cell, character in self.engine.puzzle.characters.items()
+        }
         for clue in state.revealed_clues:
-            self.clue_listbox.insert(tk.END, f" [{clue.id}]  {clue.describe()}")
+            self.clue_listbox.insert(
+                tk.END, f" [{clue.id}]  {clue.describe(names)}"
+            )
 
         total = state.n * state.n
         done = len(state.proved)
