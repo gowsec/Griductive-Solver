@@ -110,10 +110,22 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertEqual(report.status, "UNIQUE")
                 self.assertEqual(report.models_found, 1)
                 self.assertEqual(report.models[0], puzzle.solution)
-                if puzzle.n >= 4:
-                    self.assertGreater(report.stats.decisions, 0)
-                if puzzle.n == 5:
-                    self.assertGreaterEqual(report.stats.backtracks, 1)
+                self.assertGreater(report.stats.decisions, 0)
+                self.assertGreaterEqual(report.stats.backtracks, 1)
+
+    def test_experiment_runner_records_unique_and_dpll_metrics(self) -> None:
+        for path in SAMPLE_PUZZLES:
+            with self.subTest(path=path.name):
+                row, trace = run_puzzle(path)
+                self.assertEqual(trace.terminal, "SOLVED")
+                self.assertEqual(row["unique"], "UNIQUE")
+                self.assertEqual(row["unique_models_found"], 1)
+                self.assertGreater(row["decisions"], 0)
+                self.assertGreater(row["backtracks"], 0)
+                self.assertGreater(row["unique_decisions"], 0)
+                self.assertGreater(row["unique_backtracks"], 0)
+                self.assertGreater(row["sat_calls"], 0)
+                self.assertEqual(row["unique_models_found"], 1)
 
     def test_dpll_branches_during_actual_deduction_runs(self) -> None:
         metrics = {

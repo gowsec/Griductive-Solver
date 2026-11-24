@@ -21,7 +21,8 @@ Encoding = Literal["combinatorial", "sequential"]
 CSV_FIELDS = (
     "puzzle", "size", "encoding", "primary_vars", "aux_vars", "clauses",
     "clauses_peak", "sat_calls", "decisions", "propagations", "backtracks",
-    "steps", "waves", "runtime_s", "unique", "unique_runtime_s", "status",
+    "steps", "waves", "runtime_s", "unique", "unique_models_found",
+    "unique_decisions", "unique_backtracks", "unique_runtime_s", "status",
     "error", "trial",
 )
 
@@ -33,7 +34,9 @@ def _base_row(name: str, encoding: Encoding, started: float) -> dict[str, Any]:
         "clauses_peak": "", "sat_calls": 0, "decisions": 0,
         "propagations": 0, "backtracks": 0, "steps": 0, "waves": 0,
         "runtime_s": round(time.perf_counter() - started, 6), "unique": "",
-        "unique_runtime_s": "", "status": "ERROR", "error": "", "trial": 1,
+        "unique_models_found": 0, "unique_decisions": 0,
+        "unique_backtracks": 0, "unique_runtime_s": "", "status": "ERROR",
+        "error": "", "trial": 1,
     }
 
 
@@ -78,6 +81,11 @@ def run_puzzle(
             pass
 
     unique_started = time.perf_counter()
+    unique_models_found = 0
+    unique_decisions = 0
+    unique_propagations = 0
+    unique_backtracks = 0
+    unique_sat_calls = 0
     try:
         uniqueness = check_uniqueness(
             tuple(puzzle.clues.values()),
@@ -85,6 +93,11 @@ def run_puzzle(
             encoder=CNFEncoder(puzzle.n, encoding=encoding),
         )
         unique = uniqueness.status
+        unique_models_found = uniqueness.models_found
+        unique_decisions = uniqueness.stats.decisions
+        unique_propagations = uniqueness.stats.propagations
+        unique_backtracks = uniqueness.stats.backtracks
+        unique_sat_calls = 2 if unique != "UNSAT" else 1
     except Exception as exc:
         unique = "ERROR"
         if not trace.error:
@@ -103,14 +116,17 @@ def run_puzzle(
         aux_vars=aux_vars,
         clauses=clauses,
         clauses_peak=clauses_peak,
-        sat_calls=trace.sat_calls,
-        decisions=trace.stats.decisions,
-        propagations=trace.stats.propagations,
-        backtracks=trace.stats.backtracks,
+        sat_calls=trace.sat_calls + unique_sat_calls,
+        decisions=trace.stats.decisions + unique_decisions,
+        propagations=trace.stats.propagations + unique_propagations,
+        backtracks=trace.stats.backtracks + unique_backtracks,
         steps=len(trace.steps),
         waves=trace.waves,
         runtime_s=round(loop_runtime, 6),
         unique=unique,
+        unique_models_found=unique_models_found,
+        unique_decisions=unique_decisions,
+        unique_backtracks=unique_backtracks,
         unique_runtime_s=unique_runtime,
         status=trace.terminal,
         error=trace.error,

@@ -74,7 +74,7 @@ Mỗi lần chạy một puzzle ghi một dòng CSV. Các chỉ số được t�
 
 > Với `TIMEOUT` hoặc `ERROR`: vẫn ghi các chỉ số đã thu được đến lúc dừng, đánh dấu `status` tương ứng. **Không bỏ dòng.**
 
-**Hiện trạng `runner.py`:** runner dùng chung `deduction_loop` với GUI; CSV ghi encoding, thống kê KB/DPLL, `steps`, `waves`, verdict uniqueness, thời gian riêng uniqueness, status/error và trial. `sat_calls` bao gồm cả truy vấn dùng để tìm ô forced lẫn truy vấn xác nhận trong `engine.submit`. Timeout giữ thống kê DPLL đã thu được.
+**Hiện trạng `runner.py`:** runner dùng chung `deduction_loop` với GUI; CSV ghi đầy đủ các cột ở mục 3.1 gồm `encoding`, thống kê KB/DPLL (`sat_calls`, `decisions`, `propagations`, `backtracks` tổng hợp cả lượt giải lẫn lượt kiểm duy nhất), `steps`, `waves`, thông tin uniqueness (`unique`, `unique_models_found`, `unique_decisions`, `unique_backtracks`, `unique_runtime_s`), `status`/`error` và `trial`. `sat_calls` bao gồm cả truy vấn tìm ô forced, truy vấn xác nhận trong `engine.submit`, và các lần gọi DPLL của `check_uniqueness`. Khi `TIMEOUT` vẫn giữ nguyên thống kê DPLL đã thu được đến thời điểm dừng.
 
 ### 3.2 Định nghĩa "đợt lật" (wave)
 
