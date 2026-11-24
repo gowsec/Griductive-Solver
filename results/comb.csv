@@ -1,0 +1,76 @@
+puzzle,size,encoding,primary_vars,aux_vars,clauses,clauses_peak,sat_calls,decisions,propagations,backtracks,steps,waves,runtime_s,unique,unique_models_found,unique_decisions,unique_backtracks,unique_runtime_s,status,error,trial
+3x3_01.json,3,combinatorial,9,0,45,45,90,2,385,1,8,8,0.002838,UNIQUE,1,2,1,0.000149,SOLVED,,1
+3x3_01.json,3,combinatorial,9,0,45,45,90,2,385,1,8,8,0.002834,UNIQUE,1,2,1,0.000137,SOLVED,,2
+3x3_01.json,3,combinatorial,9,0,45,45,90,2,385,1,8,8,0.002702,UNIQUE,1,2,1,0.000133,SOLVED,,3
+3x3_01.json,3,combinatorial,9,0,45,45,90,2,385,1,8,8,0.002737,UNIQUE,1,2,1,0.000132,SOLVED,,4
+3x3_01.json,3,combinatorial,9,0,45,45,90,2,385,1,8,8,0.003198,UNIQUE,1,2,1,0.000147,SOLVED,,5
+3x3_02.json,3,combinatorial,9,0,25,25,90,0,370,0,8,8,0.001129,UNIQUE,1,0,0,4.5e-05,SOLVED,,1
+3x3_02.json,3,combinatorial,9,0,25,25,90,0,370,0,8,8,0.001151,UNIQUE,1,0,0,4.7e-05,SOLVED,,2
+3x3_02.json,3,combinatorial,9,0,25,25,90,0,370,0,8,8,0.001166,UNIQUE,1,0,0,4.8e-05,SOLVED,,3
+3x3_02.json,3,combinatorial,9,0,25,25,90,0,370,0,8,8,0.001117,UNIQUE,1,0,0,4.5e-05,SOLVED,,4
+3x3_02.json,3,combinatorial,9,0,25,25,90,0,370,0,8,8,0.001147,UNIQUE,1,0,0,4.4e-05,SOLVED,,5
+3x3_03.json,3,combinatorial,9,0,45,45,90,10,365,8,8,8,0.002721,UNIQUE,1,10,8,0.000245,SOLVED,,1
+3x3_03.json,3,combinatorial,9,0,45,45,90,10,365,8,8,8,0.002779,UNIQUE,1,10,8,0.000246,SOLVED,,2
+3x3_03.json,3,combinatorial,9,0,45,45,90,10,365,8,8,8,0.002798,UNIQUE,1,10,8,0.000253,SOLVED,,3
+3x3_03.json,3,combinatorial,9,0,45,45,90,10,365,8,8,8,0.002772,UNIQUE,1,10,8,0.000249,SOLVED,,4
+3x3_03.json,3,combinatorial,9,0,45,45,90,10,365,8,8,8,0.002812,UNIQUE,1,10,8,0.000252,SOLVED,,5
+4x4_01.json,4,combinatorial,16,0,89,89,158,185,1462,139,15,10,0.018009,UNIQUE,1,4,3,0.000404,SOLVED,,1
+4x4_01.json,4,combinatorial,16,0,89,89,158,185,1462,139,15,10,0.014114,UNIQUE,1,4,3,0.000347,SOLVED,,2
+4x4_01.json,4,combinatorial,16,0,89,89,158,185,1462,139,15,10,0.014203,UNIQUE,1,4,3,0.000418,SOLVED,,3
+4x4_01.json,4,combinatorial,16,0,89,89,158,185,1462,139,15,10,0.013904,UNIQUE,1,4,3,0.00034,SOLVED,,4
+4x4_01.json,4,combinatorial,16,0,89,89,158,185,1462,139,15,10,0.013883,UNIQUE,1,4,3,0.00034,SOLVED,,5
+4x4_02.json,4,combinatorial,16,0,43,43,272,0,1812,0,15,15,0.004654,UNIQUE,1,0,0,6.8e-05,SOLVED,,1
+4x4_02.json,4,combinatorial,16,0,43,43,272,0,1812,0,15,15,0.00428,UNIQUE,1,0,0,6.8e-05,SOLVED,,2
+4x4_02.json,4,combinatorial,16,0,43,43,272,0,1812,0,15,15,0.004469,UNIQUE,1,0,0,7e-05,SOLVED,,3
+4x4_02.json,4,combinatorial,16,0,43,43,272,0,1812,0,15,15,0.004448,UNIQUE,1,0,0,7.1e-05,SOLVED,,4
+4x4_02.json,4,combinatorial,16,0,43,43,272,0,1812,0,15,15,0.00413,UNIQUE,1,0,0,6.6e-05,SOLVED,,5
+4x4_03.json,4,combinatorial,16,0,66,66,272,13,1694,12,15,15,0.011701,UNIQUE,1,13,12,0.000374,SOLVED,,1
+4x4_03.json,4,combinatorial,16,0,66,66,272,13,1694,12,15,15,0.010884,UNIQUE,1,13,12,0.000336,SOLVED,,2
+4x4_03.json,4,combinatorial,16,0,66,66,272,13,1694,12,15,15,0.01126,UNIQUE,1,13,12,0.000337,SOLVED,,3
+4x4_03.json,4,combinatorial,16,0,66,66,272,13,1694,12,15,15,0.011118,UNIQUE,1,13,12,0.000346,SOLVED,,4
+4x4_03.json,4,combinatorial,16,0,66,66,272,13,1694,12,15,15,0.010941,UNIQUE,1,13,12,0.000341,SOLVED,,5
+5x5_01.json,5,combinatorial,25,24,231,231,398,3081,13038,319,24,16,0.11277,UNIQUE,1,8,7,0.001141,SOLVED,,1
+5x5_01.json,5,combinatorial,25,24,231,231,398,3081,13038,319,24,16,0.113641,UNIQUE,1,8,7,0.001151,SOLVED,,2
+5x5_01.json,5,combinatorial,25,24,231,231,398,3081,13038,319,24,16,0.148376,UNIQUE,1,8,7,0.00116,SOLVED,,3
+5x5_01.json,5,combinatorial,25,24,231,231,398,3081,13038,319,24,16,0.117707,UNIQUE,1,8,7,0.001122,SOLVED,,4
+5x5_01.json,5,combinatorial,25,24,231,231,398,3081,13038,319,24,16,0.119007,UNIQUE,1,8,7,0.001637,SOLVED,,5
+bad_contradiction.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000362,,0,0,0,,ERROR,PuzzleError: $.clues.B1: clue is not satisfied by the supplied solution,1
+bad_contradiction.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000322,,0,0,0,,ERROR,PuzzleError: $.clues.B1: clue is not satisfied by the supplied solution,2
+bad_contradiction.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000302,,0,0,0,,ERROR,PuzzleError: $.clues.B1: clue is not satisfied by the supplied solution,3
+bad_contradiction.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000285,,0,0,0,,ERROR,PuzzleError: $.clues.B1: clue is not satisfied by the supplied solution,4
+bad_contradiction.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000324,,0,0,0,,ERROR,PuzzleError: $.clues.B1: clue is not satisfied by the supplied solution,5
+bad_invalid_k.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000224,,0,0,0,,ERROR,PuzzleError: $.clues.A1.k: expected a value between 0 and 1,1
+bad_invalid_k.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000189,,0,0,0,,ERROR,PuzzleError: $.clues.A1.k: expected a value between 0 and 1,2
+bad_invalid_k.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000201,,0,0,0,,ERROR,PuzzleError: $.clues.A1.k: expected a value between 0 and 1,3
+bad_invalid_k.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000212,,0,0,0,,ERROR,PuzzleError: $.clues.A1.k: expected a value between 0 and 1,4
+bad_invalid_k.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000232,,0,0,0,,ERROR,PuzzleError: $.clues.A1.k: expected a value between 0 and 1,5
+bad_missing_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000183,,0,0,0,,ERROR,PuzzleError: $.clues: missing entries for A1,1
+bad_missing_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.00021,,0,0,0,,ERROR,PuzzleError: $.clues: missing entries for A1,2
+bad_missing_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000242,,0,0,0,,ERROR,PuzzleError: $.clues: missing entries for A1,3
+bad_missing_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000269,,0,0,0,,ERROR,PuzzleError: $.clues: missing entries for A1,4
+bad_missing_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000269,,0,0,0,,ERROR,PuzzleError: $.clues: missing entries for A1,5
+bad_not_unique.json,2,combinatorial,4,0,0,0,10,4,5,1,0,0,0.000109,NOT_UNIQUE,2,4,1,9.4e-05,STUCK,,1
+bad_not_unique.json,2,combinatorial,4,0,0,0,10,4,5,1,0,0,7.3e-05,NOT_UNIQUE,2,4,1,7.6e-05,STUCK,,2
+bad_not_unique.json,2,combinatorial,4,0,0,0,10,4,5,1,0,0,7.1e-05,NOT_UNIQUE,2,4,1,6.2e-05,STUCK,,3
+bad_not_unique.json,2,combinatorial,4,0,0,0,10,4,5,1,0,0,6.6e-05,NOT_UNIQUE,2,4,1,5.6e-05,STUCK,,4
+bad_not_unique.json,2,combinatorial,4,0,0,0,10,4,5,1,0,0,6.4e-05,NOT_UNIQUE,2,4,1,5.6e-05,STUCK,,5
+bad_schema.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000172,,0,0,0,,ERROR,PuzzleError: $.clues.A1.type: unsupported clue type 'MYSTERY',1
+bad_schema.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000154,,0,0,0,,ERROR,PuzzleError: $.clues.A1.type: unsupported clue type 'MYSTERY',2
+bad_schema.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000159,,0,0,0,,ERROR,PuzzleError: $.clues.A1.type: unsupported clue type 'MYSTERY',3
+bad_schema.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.00016,,0,0,0,,ERROR,PuzzleError: $.clues.A1.type: unsupported clue type 'MYSTERY',4
+bad_schema.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000155,,0,0,0,,ERROR,PuzzleError: $.clues.A1.type: unsupported clue type 'MYSTERY',5
+bad_solution_mismatch.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000177,,0,0,0,,ERROR,PuzzleError: $.clues.A1: clue is not satisfied by the supplied solution,1
+bad_solution_mismatch.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000167,,0,0,0,,ERROR,PuzzleError: $.clues.A1: clue is not satisfied by the supplied solution,2
+bad_solution_mismatch.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000185,,0,0,0,,ERROR,PuzzleError: $.clues.A1: clue is not satisfied by the supplied solution,3
+bad_solution_mismatch.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000172,,0,0,0,,ERROR,PuzzleError: $.clues.A1: clue is not satisfied by the supplied solution,4
+bad_solution_mismatch.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000187,,0,0,0,,ERROR,PuzzleError: $.clues.A1: clue is not satisfied by the supplied solution,5
+bad_stuck.json,2,combinatorial,4,0,3,3,8,2,20,0,0,0,0.000114,UNIQUE,1,0,0,4.2e-05,STUCK,,1
+bad_stuck.json,2,combinatorial,4,0,3,3,8,2,20,0,0,0,9.8e-05,UNIQUE,1,0,0,3.7e-05,STUCK,,2
+bad_stuck.json,2,combinatorial,4,0,3,3,8,2,20,0,0,0,9.9e-05,UNIQUE,1,0,0,3.6e-05,STUCK,,3
+bad_stuck.json,2,combinatorial,4,0,3,3,8,2,20,0,0,0,9.6e-05,UNIQUE,1,0,0,3.6e-05,STUCK,,4
+bad_stuck.json,2,combinatorial,4,0,3,3,8,2,20,0,0,0,0.0001,UNIQUE,1,0,0,3.6e-05,STUCK,,5
+bad_unknown_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000175,,0,0,0,,ERROR,PuzzleError: $.clues.A1.cell: cell 'Z9' is outside the 1x1 grid,1
+bad_unknown_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.00016,,0,0,0,,ERROR,PuzzleError: $.clues.A1.cell: cell 'Z9' is outside the 1x1 grid,2
+bad_unknown_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000169,,0,0,0,,ERROR,PuzzleError: $.clues.A1.cell: cell 'Z9' is outside the 1x1 grid,3
+bad_unknown_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000174,,0,0,0,,ERROR,PuzzleError: $.clues.A1.cell: cell 'Z9' is outside the 1x1 grid,4
+bad_unknown_cell.json,N/A,combinatorial,,,,,0,0,0,0,0,0,0.000165,,0,0,0,,ERROR,PuzzleError: $.clues.A1.cell: cell 'Z9' is outside the 1x1 grid,5

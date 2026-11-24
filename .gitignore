@@ -21,6 +21,9 @@ env/
 # Large experiment results & outputs (as specified in docs/REGULATION.md)
 results/*
 !results/.gitkeep
+!results/comb.csv
+!results/seq.csv
+!results/RUN_INFO.txt
 *.log
 
 # Personal information, environment variables & credentials

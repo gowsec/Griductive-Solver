@@ -52,8 +52,10 @@ class GriductiveGUI:
     ) -> None:
         self.root = root
         self.root.title("Griductive Solver - Propositional Logic Deduction")
-        self.root.geometry("1100x720")
-        self.root.minsize(880, 580)
+        screen_w, screen_h = root.winfo_screenwidth(), root.winfo_screenheight()
+        win_w, win_h = min(1280, screen_w - 40), min(850, screen_h - 100)
+        self.root.geometry(f"{win_w}x{win_h}")
+        self.root.minsize(min(1000, win_w), min(640, win_h))
         self.root.configure(bg=BG)
 
         self.engine = engine if engine is not None else DummyEngine()
@@ -163,8 +165,8 @@ class GriductiveGUI:
         # Main area
         main = tk.Frame(self.root, bg=BG)
         main.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 8))
-        main.grid_columnconfigure(0, weight=7, uniform="cols")
-        main.grid_columnconfigure(1, weight=4, uniform="cols")
+        main.grid_columnconfigure(0, weight=3, uniform="cols")
+        main.grid_columnconfigure(1, weight=1, uniform="cols")
         main.grid_rowconfigure(0, weight=1)
 
         board_outer, board_body = self._panel(main, "Puzzle Grid")
@@ -253,22 +255,34 @@ class GriductiveGUI:
             child.destroy()
         self.cards.clear()
 
-        cell_gap = 2 if n >= 5 else 3
+        cell_gap = 2
         for c in range(n):
             tk.Label(
-                self.grid_frame, text=chr(ord("A") + c), bg=PANEL, fg=MUTED, font=self.f_head
-            ).grid(row=0, column=c + 1, sticky="nsew", pady=(0, 2))
+                self.grid_frame, text=chr(ord("A") + c), bg=PANEL, fg=MUTED, font=self.f_small
+            ).grid(row=0, column=c + 1, sticky="nsew")
         for r in range(n):
             tk.Label(
-                self.grid_frame, text=str(r + 1), bg=PANEL, fg=MUTED, font=self.f_head, width=2
+                self.grid_frame, text=str(r + 1), bg=PANEL, fg=MUTED, font=self.f_small, width=2
             ).grid(row=r + 1, column=0, sticky="nsew", padx=(0, 2))
             for c in range(n):
                 self._create_cell_widget(CellId(r, c), r + 1, c + 1, state, cell_gap)
 
+        # No hard minimum row height: cards are compact, so every row simply
+        # shares the available height equally and nothing can be pushed off-screen.
         for i in range(n + 1):
-            self.grid_frame.grid_rowconfigure(i, weight=1 if i else 0, uniform="row")
-            self.grid_frame.grid_columnconfigure(i, weight=1 if i else 0, uniform="col")
+            if i:
+                self.grid_frame.grid_rowconfigure(i, weight=1, uniform="row", minsize=0)
+                self.grid_frame.grid_columnconfigure(i, weight=1, uniform="col")
         self._grid_dimension = n
+
+    @staticmethod
+    def _card_sizes(n: int) -> dict[str, int]:
+        """Font sizes per grid dimension (bigger boards -> tighter cards)."""
+        if n >= 5:
+            return {"coord": 8, "name": 9, "job": 8, "badge": 8, "icon": 0, "wrap": 120}
+        if n == 4:
+            return {"coord": 9, "name": 11, "job": 9, "badge": 9, "icon": 18, "wrap": 140}
+        return {"coord": 10, "name": 13, "job": 10, "badge": 10, "icon": 26, "wrap": 160}
 
     def _create_cell_widget(
         self, cell: CellId, grid_r: int, grid_c: int, state: Any, cell_gap: int
@@ -303,44 +317,60 @@ class GriductiveGUI:
 
         character = self.engine.puzzle.characters.get(cell)
         character_name = character.name if character is not None else str(cell)
+        character_job = getattr(character, "job", "") if character is not None else ""
+        sz = self._card_sizes(state.n)
+        sans = self.f_body[0]
+
+        # Top strip: coordinate (left) + status badge (right) -> one compact line.
         header = tk.Frame(card, bg=bg)
-        header.pack(fill=tk.X, padx=5, pady=(3, 0))
+        header.pack(fill=tk.X, padx=4, pady=(2, 0))
         lbl_coord = tk.Label(
-            header, text=str(cell), bg=bg, fg=MUTED, font=self.f_small, anchor="w"
+            header, text=str(cell), bg=bg, fg=MUTED, font=(sans, sz["coord"], "bold"), anchor="w"
         )
         lbl_coord.pack(side=tk.LEFT)
-        lbl_name = tk.Label(
-            header,
-            text=character_name,
-            bg=bg,
-            fg=FG,
-            font=(self.f_body[0], 9, "bold"),
-            anchor="center",
-            justify=tk.CENTER,
-            wraplength=76,
-        )
-        lbl_name.place(relx=0.5, rely=0.5, anchor="center")
-        icon_size = 20 if state.n >= 5 else self.f_icon[1]
-        lbl_icon = tk.Label(
-            card, text=icon, bg=bg, fg=fg, font=(self.f_icon[0], icon_size)
-        )
-        lbl_icon.pack(expand=True)
-        status_size = 8 if state.n >= 5 else 9
         lbl_text = tk.Label(
-            card, text=text, bg=bg, fg=fg,
-            font=(self.f_body[0], status_size, "bold"),
+            header, text=f"{icon} {text}", bg=bg, fg=fg, font=(sans, sz["badge"], "bold"), anchor="e"
         )
-        lbl_text.pack(pady=(0, 4 if state.n >= 5 else 8))
+        lbl_text.pack(side=tk.RIGHT)
 
-        widgets = [card, header, lbl_coord, lbl_name, lbl_icon, lbl_text]
+        # Identity block (optional big icon, name, job), centred in the free space.
+        body = tk.Frame(card, bg=bg)
+        body.pack(fill=tk.X, expand=True, padx=4, pady=(0, 3))
+        lbl_icon = None
+        if sz["icon"]:
+            lbl_icon = tk.Label(body, text=icon, bg=bg, fg=fg, font=(self.f_icon[0], sz["icon"]))
+            lbl_icon.pack()
+        lbl_name = tk.Label(
+            body, text=character_name, bg=bg, fg=FG, font=(sans, sz["name"], "bold"),
+            anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+        )
+        lbl_name.pack(fill=tk.X)
+        lbl_job = tk.Label(
+            body, text=character_job, bg=bg, fg=MUTED, font=(sans, sz["job"]),
+            anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+        )
+        lbl_job.pack(fill=tk.X)
+
+        widgets = [card, header, body, lbl_coord, lbl_text, lbl_name, lbl_job]
+        if lbl_icon is not None:
+            widgets.append(lbl_icon)
         self.cards[cell] = {
             "frame": card,
             "widgets": widgets,
             "coord_label": lbl_coord,
             "name_label": lbl_name,
+            "job_label": lbl_job,
+            "status_label": lbl_text,
             "bg": bg,
             "border": border,
         }
+
+        def fit_identity(_event: Any = None) -> None:
+            available = max(36, card.winfo_width() - 16)
+            lbl_name.config(wraplength=available)
+            lbl_job.config(wraplength=available)
+
+        card.bind("<Configure>", fit_identity, add="+")
 
         for w in widgets:
             w.bind("<Button-1>", lambda _e, c=cell: self.on_cell_clicked(c))
