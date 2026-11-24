@@ -14,9 +14,11 @@ class SolverTimeout(Exception):
         self,
         message: str = "DPLL solver timed out",
         stats: SolverStats | None = None,
+        sat_calls: int = 1,
     ) -> None:
         super().__init__(message)
         self.stats = stats
+        self.sat_calls = sat_calls
 
 
 @dataclass

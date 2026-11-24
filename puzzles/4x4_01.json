@@ -40,9 +40,9 @@
   "clues": {
     "A1": {
       "type": "COMPARE",
-      "op": "GT",
-      "left": {"kind": "CELLS", "cells": ["A1"]},
-      "right": {"kind": "CELLS", "cells": ["B1"]}
+      "op": "GE",
+      "left": {"kind": "CELLS", "cells": ["A2"]},
+      "right": {"kind": "CELLS", "cells": ["B1", "A1", "B4", "D4"]}
     },
     "B1": {
       "type": "AT_LEAST",

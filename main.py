@@ -5,6 +5,7 @@ Subcommands::
     python main.py gui        [--puzzle PATH]
     python main.py solve      PUZZLE [--timeout S] [--trace-json F] [--trace-csv F]
     python main.py experiment [--suite DIR] [--out CSV] [--timeout S] [--filter TEXT]
+                              [--encoding combinatorial|sequential]
     python main.py cli        <mọi tham số của integration_cli>
     python main.py test       [tham số của pytest]
 
@@ -53,7 +54,7 @@ def cmd_gui(args: argparse.Namespace) -> int:
         engine = DummyEngine()
 
     root = tk.Tk()
-    app = GriductiveGUI(root, engine)
+    app = GriductiveGUI(root, engine, puzzle_path=args.puzzle)
     if args.puzzle:
         app.log(f"Loaded puzzle: {args.puzzle}")
     root.mainloop()
@@ -106,7 +107,7 @@ def cmd_experiment(args: argparse.Namespace) -> int:
         print(f"LỖI: không thấy thư mục {suite}", file=sys.stderr)
         return EXIT_USAGE
 
-    rows = run_suite(suite, args.out, args.timeout, args.name_filter)
+    rows = run_suite(suite, args.out, args.timeout, args.name_filter, args.encoding)
     if not rows:
         print(f"Không có file *.json nào trong {suite} (kiểm tra puzzles/ và --filter).", file=sys.stderr)
         return EXIT_USAGE
@@ -158,6 +159,10 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--out", default="results/experiment.csv")
     exp.add_argument("--timeout", type=float, default=60.0)
     exp.add_argument("--filter", dest="name_filter")
+    exp.add_argument(
+        "--encoding", choices=("combinatorial", "sequential"),
+        default="combinatorial",
+    )
 
     sub.add_parser("cli", help="CLI tích hợp (chuyển tiếp mọi tham số)")
     sub.add_parser("test", help="chạy pytest (chuyển tiếp mọi tham số)")

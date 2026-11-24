@@ -10,6 +10,7 @@ from typing import Literal
 
 from griductive.logic.entailment import SatQueryRecord
 from griductive.model.cell import CellId, Status
+from griductive.logic.dpll import SolverStats
 
 
 @dataclass(frozen=True)
@@ -30,11 +31,21 @@ class TraceLog:
     steps: list[TraceStep] = field(default_factory=list)
     terminal: Literal["SOLVED", "STUCK", "INCONSISTENT", "TIMEOUT", "ERROR"] = "STUCK"
     error: str = ""
+    sat_calls: int = 0
+    waves: int = 0
+    stats: SolverStats = field(default_factory=SolverStats)
 
     def to_json(self) -> str:
         """Serialize the trace with stable field ordering and readable IDs."""
         return json.dumps(
             {"terminal": self.terminal, "error": self.error,
+             "sat_calls": self.sat_calls,
+             "waves": self.waves,
+             "stats": {"decisions": self.stats.decisions,
+                       "propagations": self.stats.propagations,
+                       "conflicts": self.stats.conflicts,
+                       "backtracks": self.stats.backtracks,
+                       "runtime": self.stats.runtime},
              "steps": [_step_dict(step) for step in self.steps]},
             ensure_ascii=False, indent=2,
         )

@@ -109,13 +109,15 @@ def classify(
             timeout=_remaining(),
         )
     except SolverTimeout as exc:
+        # Preserve the completed negative-assumption query before the positive
+        # query timed out, both for solver statistics and SAT-call accounting.
         combined = SolverStats()
         combined.add(q_neg.stats)
         if exc.stats is not None:
             combined.add(exc.stats)
         exc.stats = combined
+        exc.sat_calls += 1
         raise
-
     q_pos = SatQueryRecord(
         cell=cell,
         assumption=var,
