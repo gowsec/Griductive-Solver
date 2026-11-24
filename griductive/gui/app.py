@@ -6,6 +6,7 @@ import time
 import tkinter as tk
 from tkinter import filedialog, ttk
 from tkinter import font as tkfont
+from pathlib import Path
 from typing import Any
 
 from griductive.engine.dummy_engine import DummyEngine, VerdictOutcome, VerdictResult
@@ -29,6 +30,7 @@ INNO_BG, INNO_FG = "#24402a", "#5ef0a0"
 HILITE = "#f6e05e"
 ACCENT = "#d4a373"
 GREEN, YELLOW, RED, BLUE = "#5ef0a0", "#f6c85f", "#ff6b81", "#7dd3fc"
+COMPARE_LEFT, COMPARE_RIGHT, COMPARE_BOTH = "#f6ad55", "#63b3ed", "#c084fc"
 
 FLASH = {  # kind -> (background, border)
     "warn": ("#5a4a1a", YELLOW),
@@ -45,11 +47,13 @@ def _pick_font(root: tk.Misc, candidates: tuple[str, ...], fallback: str) -> str
 class GriductiveGUI:
     """Tkinter Graphical User Interface for Griductive solver."""
 
-    def __init__(self, root: tk.Tk, engine: Any = None) -> None:
+    def __init__(
+        self, root: tk.Tk, engine: Any = None, puzzle_path: str | None = None
+    ) -> None:
         self.root = root
         self.root.title("Griductive Solver - Propositional Logic Deduction")
         self.root.geometry("1100x720")
-        self.root.minsize(900, 600)
+        self.root.minsize(880, 580)
         self.root.configure(bg=BG)
 
         self.engine = engine if engine is not None else DummyEngine()
@@ -58,6 +62,11 @@ class GriductiveGUI:
         self._auto_trace: TraceLog | None = None
         self.selected_cell: CellId | None = None
         self.highlighted_cells: set[CellId] = set()
+        self.highlighted_left: set[CellId] = set()
+        self.highlighted_right: set[CellId] = set()
+        self._selected_clue_index: int | None = None
+        self.puzzle_path = puzzle_path
+        self._grid_dimension = 0
         self.auto_solving = False
         self.cards: dict[CellId, dict[str, Any]] = {}
 
@@ -76,6 +85,12 @@ class GriductiveGUI:
         self._setup_ui()
         self._bind_shortcuts()
         self.refresh()
+        if self.puzzle_path:
+            self._update_puzzle_title()
+            self.set_status(
+                f"{Path(self.puzzle_path).name} · {self.engine.n}×{self.engine.n} · Ready",
+                FG,
+            )
 
     # ── Setup ────────────────────────────────────────────────────────────────
     def _setup_style(self) -> None:
@@ -107,20 +122,21 @@ class GriductiveGUI:
     def _panel(self, parent: tk.Misc, title: str) -> tuple[tk.Frame, tk.Frame]:
         outer = tk.Frame(parent, bg=PANEL, highlightthickness=1, highlightbackground=BORDER)
         tk.Label(outer, text=title, bg=PANEL, fg=FG, font=self.f_h2, anchor="w").pack(
-            fill=tk.X, padx=14, pady=(10, 6)
+            fill=tk.X, padx=10, pady=(8, 4)
         )
         body = tk.Frame(outer, bg=PANEL)
-        body.pack(fill=tk.BOTH, expand=True, padx=12, pady=(0, 12))
+        body.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
         return outer, body
 
     def _setup_ui(self) -> None:
         # Header: title + actions
         header = tk.Frame(self.root, bg=BG)
-        header.pack(side=tk.TOP, fill=tk.X, padx=16, pady=(14, 8))
+        header.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(9, 6))
 
         title_box = tk.Frame(header, bg=BG)
         title_box.pack(side=tk.LEFT)
-        tk.Label(title_box, text="🕵️ Griductive", bg=BG, fg=FG, font=self.f_title).pack(anchor="w")
+        self.title_label = tk.Label(title_box, text="🕵️ Griductive", bg=BG, fg=FG, font=self.f_title)
+        self.title_label.pack(anchor="w")
         tk.Label(
             title_box, text="Propositional logic deduction - prove every cell without guessing",
             bg=BG, fg=MUTED, font=self.f_small,
@@ -138,42 +154,43 @@ class GriductiveGUI:
         footer = tk.Frame(self.root, bg=PANEL, highlightthickness=1, highlightbackground=BORDER)
         footer.pack(side=tk.BOTTOM, fill=tk.X)
         self.lbl_status = tk.Label(footer, text="Ready", bg=PANEL, fg=FG, font=self.f_h2, anchor="w")
-        self.lbl_status.pack(side=tk.LEFT, padx=14, pady=8)
+        self.lbl_status.pack(side=tk.LEFT, padx=10, pady=6)
         self.lbl_progress = tk.Label(footer, text="0 / 0", bg=PANEL, fg=MUTED, font=self.f_small)
-        self.lbl_progress.pack(side=tk.RIGHT, padx=14)
-        self.progress = ttk.Progressbar(footer, style="Prog.Horizontal.TProgressbar", length=180, mode="determinate")
-        self.progress.pack(side=tk.RIGHT, pady=8)
+        self.lbl_progress.pack(side=tk.RIGHT, padx=10)
+        self.progress = ttk.Progressbar(footer, style="Prog.Horizontal.TProgressbar", length=150, mode="determinate")
+        self.progress.pack(side=tk.RIGHT, pady=6)
 
         # Main area
         main = tk.Frame(self.root, bg=BG)
-        main.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
-        main.grid_columnconfigure(0, weight=3, uniform="cols")
-        main.grid_columnconfigure(1, weight=2, uniform="cols")
+        main.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 8))
+        main.grid_columnconfigure(0, weight=7, uniform="cols")
+        main.grid_columnconfigure(1, weight=4, uniform="cols")
         main.grid_rowconfigure(0, weight=1)
 
         board_outer, board_body = self._panel(main, "Puzzle Grid")
-        board_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        board_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
         self.grid_frame = tk.Frame(board_body, bg=PANEL)
         self.grid_frame.pack(fill=tk.BOTH, expand=True)
 
         right = tk.Frame(main, bg=BG)
-        right.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+        right.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
         right.grid_rowconfigure(0, weight=3)
         right.grid_rowconfigure(1, weight=2)
         right.grid_columnconfigure(0, weight=1)
 
         clue_outer, clue_body = self._panel(right, "Revealed Clues")
-        clue_outer.grid(row=0, column=0, sticky="nsew", pady=(0, 8))
+        clue_outer.grid(row=0, column=0, sticky="nsew", pady=(0, 6))
         clue_scroll = ttk.Scrollbar(clue_body, style="Dark.Vertical.TScrollbar")
         clue_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        self.clue_listbox = tk.Listbox(
-            clue_body, font=self.f_mono, bg=PANEL_2, fg=FG, bd=0, highlightthickness=0,
-            selectbackground=ACCENT, selectforeground="#1f1712", activestyle="none",
-            exportselection=False, yscrollcommand=clue_scroll.set,
+        self.clue_listbox = tk.Text(
+            clue_body, font=self.f_mono, bg=PANEL_2, fg=FG, bd=0,
+            highlightthickness=0, wrap=tk.WORD, yscrollcommand=clue_scroll.set,
+            padx=6, pady=4, cursor="arrow", state=tk.DISABLED,
         )
         self.clue_listbox.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         clue_scroll.config(command=self.clue_listbox.yview)
-        self.clue_listbox.bind("<<ListboxSelect>>", self.on_clue_selected)
+        self.clue_listbox.tag_configure("selected_clue", background=ACCENT, foreground="#1f1712")
+        self.clue_listbox.bind("<ButtonRelease-1>", self.on_clue_selected)
 
         log_outer, log_body = self._panel(right, "Deduction Log")
         log_outer.grid(row=1, column=0, sticky="nsew")
@@ -201,15 +218,18 @@ class GriductiveGUI:
         state = self.engine.public_state()
         self._render_grid(state)
 
-        self.clue_listbox.delete(0, tk.END)
+        self.clue_listbox.config(state=tk.NORMAL)
+        self.clue_listbox.delete("1.0", tk.END)
         names = {
             cell: character.name
             for cell, character in self.engine.puzzle.characters.items()
         }
         for clue in state.revealed_clues:
-            self.clue_listbox.insert(
-                tk.END, f" [{clue.id}]  {clue.describe(names)}"
-            )
+            self.clue_listbox.insert(tk.END, f" [{clue.id}]  {clue.describe(names)}\n")
+        self.clue_listbox.config(state=tk.DISABLED)
+        if self._selected_clue_index is not None:
+            line = self._selected_clue_index + 1
+            self.clue_listbox.tag_add("selected_clue", f"{line}.0", f"{line}.end")
 
         total = state.n * state.n
         done = len(state.proved)
@@ -220,27 +240,39 @@ class GriductiveGUI:
             self.set_status("🎉 PUZZLE SOLVED!", GREEN)
 
     def _render_grid(self, state: Any) -> None:
+        n = state.n
+        old_dimension = self._grid_dimension
+        for index in range(max(old_dimension, n) + 1):
+            self.grid_frame.grid_rowconfigure(
+                index, weight=0, uniform="", minsize=0, pad=0
+            )
+            self.grid_frame.grid_columnconfigure(
+                index, weight=0, uniform="", minsize=0, pad=0
+            )
         for child in self.grid_frame.winfo_children():
             child.destroy()
         self.cards.clear()
-        n = state.n
 
+        cell_gap = 2 if n >= 5 else 3
         for c in range(n):
             tk.Label(
                 self.grid_frame, text=chr(ord("A") + c), bg=PANEL, fg=MUTED, font=self.f_head
-            ).grid(row=0, column=c + 1, sticky="nsew", pady=(0, 4))
+            ).grid(row=0, column=c + 1, sticky="nsew", pady=(0, 2))
         for r in range(n):
             tk.Label(
                 self.grid_frame, text=str(r + 1), bg=PANEL, fg=MUTED, font=self.f_head, width=2
-            ).grid(row=r + 1, column=0, sticky="nsew", padx=(0, 4))
+            ).grid(row=r + 1, column=0, sticky="nsew", padx=(0, 2))
             for c in range(n):
-                self._create_cell_widget(CellId(r, c), r + 1, c + 1, state)
+                self._create_cell_widget(CellId(r, c), r + 1, c + 1, state, cell_gap)
 
-        for i in range(1, n + 1):
-            self.grid_frame.grid_rowconfigure(i, weight=1, uniform="row", minsize=80)
-            self.grid_frame.grid_columnconfigure(i, weight=1, uniform="col", minsize=90)
+        for i in range(n + 1):
+            self.grid_frame.grid_rowconfigure(i, weight=1 if i else 0, uniform="row")
+            self.grid_frame.grid_columnconfigure(i, weight=1 if i else 0, uniform="col")
+        self._grid_dimension = n
 
-    def _create_cell_widget(self, cell: CellId, grid_r: int, grid_c: int, state: Any) -> None:
+    def _create_cell_widget(
+        self, cell: CellId, grid_r: int, grid_c: int, state: Any, cell_gap: int
+    ) -> None:
         status = state.proved.get(cell)
         hidden = status is None
 
@@ -254,24 +286,61 @@ class GriductiveGUI:
             bg, fg, icon, text = HIDDEN_BG, MUTED, "❓", "HIDDEN"
             border = BORDER
 
-        if cell in self.highlighted_cells:
+        if cell in self.highlighted_left and cell in self.highlighted_right:
+            border = COMPARE_BOTH
+        elif cell in self.highlighted_left:
+            border = COMPARE_LEFT
+        elif cell in self.highlighted_right:
+            border = COMPARE_RIGHT
+        elif cell in self.highlighted_cells:
             border = HILITE
 
         card = tk.Frame(
             self.grid_frame, bg=bg, highlightthickness=2, highlightbackground=border,
             cursor="hand2" if hidden else "arrow",
         )
-        card.grid(row=grid_r, column=grid_c, sticky="nsew", padx=5, pady=5)
+        card.grid(row=grid_r, column=grid_c, sticky="nsew", padx=cell_gap, pady=cell_gap)
 
-        lbl_name = tk.Label(card, text=str(cell), bg=bg, fg=MUTED, font=self.f_small, anchor="w")
-        lbl_name.pack(fill=tk.X, padx=8, pady=(6, 0))
-        lbl_icon = tk.Label(card, text=icon, bg=bg, fg=fg, font=self.f_icon)
+        character = self.engine.puzzle.characters.get(cell)
+        character_name = character.name if character is not None else str(cell)
+        header = tk.Frame(card, bg=bg)
+        header.pack(fill=tk.X, padx=5, pady=(3, 0))
+        lbl_coord = tk.Label(
+            header, text=str(cell), bg=bg, fg=MUTED, font=self.f_small, anchor="w"
+        )
+        lbl_coord.pack(side=tk.LEFT)
+        lbl_name = tk.Label(
+            header,
+            text=character_name,
+            bg=bg,
+            fg=FG,
+            font=(self.f_body[0], 9, "bold"),
+            anchor="center",
+            justify=tk.CENTER,
+            wraplength=76,
+        )
+        lbl_name.place(relx=0.5, rely=0.5, anchor="center")
+        icon_size = 20 if state.n >= 5 else self.f_icon[1]
+        lbl_icon = tk.Label(
+            card, text=icon, bg=bg, fg=fg, font=(self.f_icon[0], icon_size)
+        )
         lbl_icon.pack(expand=True)
-        lbl_text = tk.Label(card, text=text, bg=bg, fg=fg, font=(self.f_body[0], 9, "bold"))
-        lbl_text.pack(pady=(0, 8))
+        status_size = 8 if state.n >= 5 else 9
+        lbl_text = tk.Label(
+            card, text=text, bg=bg, fg=fg,
+            font=(self.f_body[0], status_size, "bold"),
+        )
+        lbl_text.pack(pady=(0, 4 if state.n >= 5 else 8))
 
-        widgets = [card, lbl_name, lbl_icon, lbl_text]
-        self.cards[cell] = {"frame": card, "widgets": widgets, "bg": bg, "border": border}
+        widgets = [card, header, lbl_coord, lbl_name, lbl_icon, lbl_text]
+        self.cards[cell] = {
+            "frame": card,
+            "widgets": widgets,
+            "coord_label": lbl_coord,
+            "name_label": lbl_name,
+            "bg": bg,
+            "border": border,
+        }
 
         for w in widgets:
             w.bind("<Button-1>", lambda _e, c=cell: self.on_cell_clicked(c))
@@ -388,15 +457,21 @@ class GriductiveGUI:
 
     def on_clue_selected(self, event: Any = None) -> None:
         """Highlight grid cells associated with the selected clue."""
-        selection = self.clue_listbox.curselection()
-        if not selection:
+        if event is not None and hasattr(event, "x") and hasattr(event, "y"):
+            index = self.clue_listbox.index(f"@{event.x},{event.y}")
+            self._selected_clue_index = int(str(index).split(".", 1)[0]) - 1
+        if self._selected_clue_index is None:
             return
-        idx = selection[0]
         state = self.engine.public_state()
-        if 0 <= idx < len(state.revealed_clues):
-            clue = state.revealed_clues[idx]
+        if 0 <= self._selected_clue_index < len(state.revealed_clues):
+            clue = state.revealed_clues[self._selected_clue_index]
             try:
                 self.highlighted_cells = set(clue.cells(state.n))
+                self.highlighted_left = set()
+                self.highlighted_right = set()
+                if hasattr(clue, "left_cells") and hasattr(clue, "right_cells"):
+                    self.highlighted_left = set(clue.left_cells(state.n))
+                    self.highlighted_right = set(clue.right_cells(state.n))
                 self.log(f"Highlighting cells for clue {clue.id}: {sorted(str(c) for c in self.highlighted_cells)}")
                 self._render_grid(state)  # keep clue selection intact
             except Exception as e:  # noqa: BLE001
@@ -405,7 +480,10 @@ class GriductiveGUI:
     def _clear_highlight(self) -> None:
         if self.highlighted_cells:
             self.highlighted_cells.clear()
-            self.clue_listbox.selection_clear(0, tk.END)
+            self.highlighted_left.clear()
+            self.highlighted_right.clear()
+            self._selected_clue_index = None
+            self.clue_listbox.tag_remove("selected_clue", "1.0", tk.END)
             self._render_grid(self.engine.public_state())
 
     def on_load_puzzle(self) -> None:
@@ -421,18 +499,39 @@ class GriductiveGUI:
             engine = GameEngine.load(filename, agent.classify)
             self._stop_auto()
             self.engine, self.agent = engine, agent
+            self.puzzle_path = filename
+            self.selected_cell = None
             self.highlighted_cells.clear()
-            self.set_status("Ready", FG)
+            self.highlighted_left.clear()
+            self.highlighted_right.clear()
+            self._selected_clue_index = None
+            self.clue_listbox.tag_remove("selected_clue", "1.0", tk.END)
+            self._update_puzzle_title()
+            self.set_status(f"{Path(filename).name} · {engine.n}×{engine.n} · Ready", FG)
             self.log(f"Loaded puzzle: {filename}")
             self.refresh()
         except Exception as exc:
             self.log(f"Could not load puzzle: {type(exc).__name__}: {exc}", "err")
             self.set_status("Could not load puzzle", RED)
 
+    def _update_puzzle_title(self) -> None:
+        """Show the active puzzle filename and grid size in the window title."""
+        if self.puzzle_path and hasattr(self.engine, "n"):
+            filename = Path(self.puzzle_path).name
+            self.root.title(f"Griductive Solver - {filename} ({self.engine.n}×{self.engine.n})")
+            self.title_label.config(
+                text=f"🕵️ Griductive · {filename} ({self.engine.n}×{self.engine.n})"
+            )
+
     def on_restart(self) -> None:
         self._stop_auto()
         self.engine.restart()
+        self.selected_cell = None
         self.highlighted_cells.clear()
+        self.highlighted_left.clear()
+        self.highlighted_right.clear()
+        self._selected_clue_index = None
+        self.clue_listbox.tag_remove("selected_clue", "1.0", tk.END)
         self.log("Game restarted to initial revealed cards.")
         self.set_status("Ready", FG)
         self.refresh()

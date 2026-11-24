@@ -74,7 +74,7 @@ Mỗi lần chạy một puzzle ghi một dòng CSV. Các chỉ số được t�
 
 > Với `TIMEOUT` hoặc `ERROR`: vẫn ghi các chỉ số đã thu được đến lúc dừng, đánh dấu `status` tương ứng. **Không bỏ dòng.**
 
-**Hiện trạng `runner.py`:** CSV đang có 13 cột: `puzzle, size, primary_vars, aux_vars, clauses, sat_calls, decisions, propagations, backtracks, steps, runtime_s, status, error`. Các cột `encoding`, `clauses_peak`, `waves`, `unique`, `unique_runtime_s`, `trial` là *(kế hoạch)*, M5 bổ sung. Ngoài ra `sat_calls` hiện chưa cộng các query bên trong `engine.submit` (M5 sẽ sửa).
+**Hiện trạng `runner.py`:** runner dùng chung `deduction_loop` với GUI; CSV ghi encoding, thống kê KB/DPLL, `steps`, `waves`, verdict uniqueness, thời gian riêng uniqueness, status/error và trial. `sat_calls` bao gồm cả truy vấn dùng để tìm ô forced lẫn truy vấn xác nhận trong `engine.submit`. Timeout giữ thống kê DPLL đã thu được.
 
 ### 3.2 Định nghĩa "đợt lật" (wave)
 
@@ -111,7 +111,7 @@ python main.py experiment --suite puzzles/ --filter 4x4 --out results/4x4.csv
 # Giải một puzzle, in từng bước và xuất trace
 python main.py solve puzzles/4x4_01.json --trace-csv results/trace_4x4.csv
 
-# (kế hoạch, M5 bổ sung) E2: so sánh mã hóa
+# E2: so sánh mã hóa
 python main.py experiment --suite puzzles/ --encoding combinatorial --out results/comb.csv
 python main.py experiment --suite puzzles/ --encoding sequential    --out results/seq.csv
 
@@ -216,7 +216,7 @@ Báo cáo như **kết quả thành công** của hệ thống (hệ thống nh�
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|---|
 | _điền từ CSV_ | | | | | | | | | | | | |
 
-> Cột `Waves` chỉ điền được khi runner bổ sung `waves` *(kế hoạch)*; nếu không kịp thì bỏ cột này và mục 3.2 khỏi báo cáo.
+> Runner hiện ghi `Waves` theo định nghĩa tại mục 3.2; các ô được suy ra trong cùng snapshot clue thuộc cùng một wave.
 
 **Bảng 2. Failure, timeout và kết quả bất thường** (không được bỏ trống; ghi "không có" nếu không có):
 
@@ -298,9 +298,9 @@ Thực nghiệm chạy trên bản code **đã đóng băng**; nếu sửa lõi 
 
 | File | N | Thẻ lật sẵn | Loại clue có mặt | Số clue extension | `unique` | Ghi chú |
 |---|:-:|:-:|---|:-:|:-:|---|
-| `3x3_01.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Giải bằng 8 lần suy diễn; DPLL: 2 decisions, 1 backtrack |
-| `4x4_01.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Giải bằng 15 lần suy diễn; DPLL: 2 decisions, 1 backtrack |
-| `5x5_01.json` | 5 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | 24 wave; clue đếm tới 6 ô và parity cả lưới 25 ô; chỉ mở A1 lúc đầu; DPLL: 2 decisions, 1 backtrack |
+| `3x3_01.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 8 bước/8 waves; DPLL trong vòng giải: 0 decisions, 0 backtracks |
+| `4x4_01.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 15 bước/10 waves; DPLL trong vòng giải: 181 decisions, 136 backtracks |
+| `5x5_01.json` | 5 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 24 bước/16 waves; clue đếm tới 6 ô và parity cả lưới 25 ô; chỉ mở A1 lúc đầu; DPLL trong vòng giải: 3.073 decisions, 312 backtracks |
 
 ### 9.3 Checklist trước khi nộp số liệu
 

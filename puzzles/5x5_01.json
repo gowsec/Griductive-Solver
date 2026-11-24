@@ -39,8 +39,8 @@
     "A1": {
       "type": "COMPARE",
       "op": "GT",
-      "left": {"kind": "CELLS", "cells": ["A1"]},
-      "right": {"kind": "CELLS", "cells": ["B1"]}
+      "left": {"kind": "CELLS", "cells": ["E5"]},
+      "right": {"kind": "CELLS", "cells": ["B3", "D5", "B1"]}
     },
     "B1": {
       "type": "AT_LEAST",

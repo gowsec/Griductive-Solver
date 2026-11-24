@@ -83,11 +83,15 @@ class GameEngine:
             unsolved=unsolved,
         )
 
-    def submit(self, cell: CellId, status: Status) -> VerdictResult:
+    def submit(
+        self, cell: CellId, status: Status, timeout: float | None = None
+    ) -> VerdictResult:
         """Submit a proposed status, retaining the frozen engine interface."""
-        return self.reveal(cell, status)
+        return self.reveal(cell, status, timeout=timeout)
 
-    def reveal(self, cell: CellId, status: Status) -> VerdictResult:
+    def reveal(
+        self, cell: CellId, status: Status, timeout: float | None = None
+    ) -> VerdictResult:
         """Reveal a cell only when the oracle proves the submitted status.
 
         Raises:
@@ -103,7 +107,10 @@ class GameEngine:
         if not isinstance(status, Status):
             raise ValueError("status must be a Status")
 
-        classification = self.oracle(self.public_state(), cell)
+        if timeout is None:
+            classification = self.oracle(self.public_state(), cell)
+        else:
+            classification = self.oracle(self.public_state(), cell, timeout=timeout)  # type: ignore[call-arg]
         if not hasattr(classification, "verdict"):
             raise TypeError("oracle result must provide a verdict")
         verdict = classification.verdict
