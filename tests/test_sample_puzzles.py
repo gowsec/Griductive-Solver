@@ -143,8 +143,8 @@ class SamplePuzzleTests(unittest.TestCase):
             for path in SAMPLE_PUZZLES
         }
         self.assertEqual(
-            [metrics[path.name]["status"] for path in SAMPLE_PUZZLES],
-            ["SOLVED", "SOLVED", "SOLVED"],
+            [metrics[path.name]["status"] for path in STANDARD_PUZZLES],
+            ["SOLVED"] * len(STANDARD_PUZZLES),
         )
         self.assertEqual(metrics["3x3_01.json"]["unique"], "UNIQUE")
         for filename in ("4x4_01.json", "5x5_01.json"):
