@@ -68,6 +68,7 @@ class LogicAgent:
         if exc.stats is not None:
             combined.add(exc.stats)
         exc.stats = combined
+        exc.sat_calls += len(accumulated_queries)
 
     def _compile_state(self, state: PublicState) -> tuple[KB, VarMap, DPLLSolver]:
         """Build the CNF knowledge base and variable map from ``PublicState``."""
@@ -85,9 +86,19 @@ class LogicAgent:
         timeout: float | None = None,
     ) -> Classification:
         """Classify a single cell given the current ``PublicState``."""
-        kb, varmap, solver = self._compile_state(state)
+        started = time.perf_counter()
         effective_timeout = self._resolve_timeout(timeout)
-        result = entailment_classify(kb, varmap, cell, solver, timeout=effective_timeout)
+        kb, varmap, solver = self._compile_state(state)
+        if effective_timeout is not None:
+            effective_timeout -= time.perf_counter() - started
+        try:
+            result = entailment_classify(
+                kb, varmap, cell, solver, timeout=effective_timeout
+            )
+        except SolverTimeout as exc:
+            self._last_queries = ()
+            self._attach_accumulated_stats(exc, [])
+            raise
         self._last_queries = result.queries
         self._last_verdict = result.verdict
         return result

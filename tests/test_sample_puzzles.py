@@ -10,6 +10,7 @@ from griductive.engine.game_engine import GameEngine
 from griductive.io.loader import PuzzleError, load_puzzle
 from griductive.logic.agent import LogicAgent
 from griductive.logic.uniqueness import check_uniqueness
+from griductive.experiments.runner import run_puzzle
 from griductive.model.cell import CellId, Status
 from griductive.model.clue import Compare, Count, Different, Parity
 
@@ -113,6 +114,20 @@ class SamplePuzzleTests(unittest.TestCase):
                     self.assertGreater(report.stats.decisions, 0)
                 if puzzle.n == 5:
                     self.assertGreaterEqual(report.stats.backtracks, 1)
+
+    def test_dpll_branches_during_actual_deduction_runs(self) -> None:
+        metrics = {
+            path.name: run_puzzle(path)[0]
+            for path in SAMPLE_PUZZLES
+        }
+        self.assertEqual(
+            [metrics[path.name]["status"] for path in SAMPLE_PUZZLES],
+            ["SOLVED", "SOLVED", "SOLVED"],
+        )
+        self.assertEqual(metrics["3x3_01.json"]["unique"], "UNIQUE")
+        for filename in ("4x4_01.json", "5x5_01.json"):
+            self.assertGreater(metrics[filename]["decisions"], 0)
+        self.assertGreater(metrics["5x5_01.json"]["backtracks"], 0)
 
     def test_game_engine_submit_uses_real_logic_agent_classify(self) -> None:
         for path in CLASSIFIABLE_PUZZLES:
