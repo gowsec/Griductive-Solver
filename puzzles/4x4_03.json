@@ -3,67 +3,67 @@
   "characters": {
     "D4": {
       "name": "Ari",
-      "job": "Mixed-clue agent"
+      "job": "Detective"
     },
     "C4": {
       "name": "Bea",
-      "job": "Mixed-clue agent"
+      "job": "Doctor"
     },
     "B4": {
       "name": "Cal",
-      "job": "Mixed-clue agent"
+      "job": "Artist"
     },
     "A4": {
       "name": "Dee",
-      "job": "Mixed-clue agent"
+      "job": "Chef"
     },
     "D3": {
       "name": "Eli",
-      "job": "Mixed-clue agent"
+      "job": "Engineer"
     },
     "C3": {
       "name": "Fay",
-      "job": "Mixed-clue agent"
+      "job": "Lawyer"
     },
     "B3": {
       "name": "Gus",
-      "job": "Mixed-clue agent"
+      "job": "Teacher"
     },
     "A3": {
       "name": "Hal",
-      "job": "Mixed-clue agent"
+      "job": "Pilot"
     },
     "D2": {
       "name": "Ivy",
-      "job": "Mixed-clue agent"
+      "job": "Writer"
     },
     "C2": {
       "name": "Jay",
-      "job": "Mixed-clue agent"
+      "job": "Baker"
     },
     "B2": {
       "name": "Kai",
-      "job": "Mixed-clue agent"
+      "job": "Nurse"
     },
     "A2": {
       "name": "Lou",
-      "job": "Mixed-clue agent"
+      "job": "Farmer"
     },
     "D1": {
       "name": "Mia",
-      "job": "Mixed-clue agent"
+      "job": "Sailor"
     },
     "C1": {
       "name": "Ned",
-      "job": "Mixed-clue agent"
+      "job": "Guard"
     },
     "B1": {
       "name": "Ora",
-      "job": "Mixed-clue agent"
+      "job": "Clerk"
     },
     "A1": {
       "name": "Paz",
-      "job": "Mixed-clue agent"
+      "job": "Astronaut"
     }
   },
   "solution": {

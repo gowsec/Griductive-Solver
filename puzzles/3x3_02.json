@@ -2,40 +2,40 @@
   "n": 3,
   "characters": {
     "A1": {
-      "name": "Person 1",
-      "job": "Agent"
+      "name": "Alice",
+      "job": "Detective"
     },
     "B1": {
-      "name": "Person 2",
-      "job": "Agent"
+      "name": "Bao",
+      "job": "Doctor"
     },
     "C1": {
-      "name": "Person 3",
-      "job": "Agent"
+      "name": "Chi",
+      "job": "Artist"
     },
     "A2": {
-      "name": "Person 4",
-      "job": "Agent"
+      "name": "Dara",
+      "job": "Chef"
     },
     "B2": {
-      "name": "Person 5",
-      "job": "Agent"
+      "name": "Eli",
+      "job": "Engineer"
     },
     "C2": {
-      "name": "Person 6",
-      "job": "Agent"
+      "name": "Fiona",
+      "job": "Lawyer"
     },
     "A3": {
-      "name": "Person 7",
-      "job": "Agent"
+      "name": "Gia",
+      "job": "Teacher"
     },
     "B3": {
-      "name": "Person 8",
-      "job": "Agent"
+      "name": "Huy",
+      "job": "Pilot"
     },
     "C3": {
-      "name": "Person 9",
-      "job": "Agent"
+      "name": "Iris",
+      "job": "Writer"
     }
   },
   "solution": {
