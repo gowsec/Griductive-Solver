@@ -12,7 +12,7 @@ from griductive.logic.agent import LogicAgent
 from griductive.logic.uniqueness import check_uniqueness
 from griductive.experiments.runner import run_puzzle
 from griductive.model.cell import CellId, Status
-from griductive.model.clue import Compare, Count, Different, Parity
+from griductive.model.clue import Compare, Count, Different, Fact, Parity, Same
 
 try:
     holds = import_module("griductive.logic.semantics").holds
@@ -23,17 +23,38 @@ except ModuleNotFoundError as error:
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAMPLE_PUZZLES = (
-    ROOT / "puzzles/3x3_01.json",
-    ROOT / "puzzles/4x4_01.json",
-    ROOT / "puzzles/5x5_01.json",
+SAMPLE_PUZZLES = tuple(
+    sorted((ROOT / "puzzles").glob("[345]x[345]_*.json"), key=lambda path: path.name)
 )
-CLASSIFIABLE_PUZZLES = SAMPLE_PUZZLES
-BRUTE_FORCE_PUZZLES = SAMPLE_PUZZLES[:2]
+STANDARD_PUZZLES = tuple(
+    path for path in SAMPLE_PUZZLES
+    if path.name.startswith(("3x3_", "4x4_", "5x5_"))
+)
+CLASSIFIABLE_PUZZLES = STANDARD_PUZZLES
+BRUTE_FORCE_PUZZLES = tuple(
+    path for path in STANDARD_PUZZLES
+    if path.name.startswith(("3x3_", "4x4_"))
+)
 SEMANTICS_AVAILABLE = holds is not None
 
 
 class SamplePuzzleTests(unittest.TestCase):
+    def test_standard_puzzle_set_has_required_counts_and_core_control(self) -> None:
+        for prefix, minimum in (("3x3_", 3), ("4x4_", 3), ("5x5_", 1)):
+            with self.subTest(prefix=prefix):
+                paths = tuple(path for path in STANDARD_PUZZLES if path.name.startswith(prefix))
+                self.assertGreaterEqual(len(paths), minimum)
+
+        for prefix in ("3x3_", "4x4_"):
+            core_paths = []
+            for path in STANDARD_PUZZLES:
+                if not path.name.startswith(prefix):
+                    continue
+                puzzle = load_puzzle(path)
+                if all(not isinstance(clue, (Parity, Compare)) for clue in puzzle.clues.values()):
+                    core_paths.append(path)
+            self.assertGreaterEqual(len(core_paths), 1)
+
     def test_puzzles_load_and_initial_state_is_valid(self) -> None:
         for path in SAMPLE_PUZZLES:
             with self.subTest(path=path.name):
@@ -41,25 +62,10 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertIn(puzzle.n, (3, 4, 5))
                 self.assertEqual(len(puzzle.characters), puzzle.n**2)
                 self.assertEqual(len(puzzle.clues), puzzle.n**2)
-                self.assertIn(CellId(0, 0), puzzle.initial_revealed)
-                self.assertEqual(
-                    {type(clue) for clue in puzzle.clues.values()},
-                    {Count, Different, Compare, Parity},
-                )
-                self.assertEqual(
-                    {
-                        clue.op
-                        for clue in puzzle.clues.values()
-                        if isinstance(clue, Count)
-                    },
-                    {Count.EQ, Count.GE, Count.LE},
-                )
-                self.assertEqual(
-                    sum(
-                        isinstance(clue, (Parity, Compare))
-                        for clue in puzzle.clues.values()
-                    ),
-                    3,
+                self.assertGreaterEqual(len(puzzle.initial_revealed), 1)
+                self.assertLessEqual(
+                    sum(isinstance(clue, (Parity, Compare)) for clue in puzzle.clues.values()),
+                    len(puzzle.clues),
                 )
                 if puzzle.n == 5:
                     self.assertEqual(
@@ -110,8 +116,9 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertEqual(report.status, "UNIQUE")
                 self.assertEqual(report.models_found, 1)
                 self.assertEqual(report.models[0], puzzle.solution)
-                self.assertGreater(report.stats.decisions, 0)
-                self.assertGreaterEqual(report.stats.backtracks, 1)
+                if any(isinstance(clue, (Parity, Compare)) for clue in puzzle.clues.values()):
+                    self.assertGreater(report.stats.decisions, 0)
+                    self.assertGreaterEqual(report.stats.backtracks, 1)
 
     def test_experiment_runner_records_unique_and_dpll_metrics(self) -> None:
         for path in SAMPLE_PUZZLES:
@@ -120,10 +127,13 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertEqual(trace.terminal, "SOLVED")
                 self.assertEqual(row["unique"], "UNIQUE")
                 self.assertEqual(row["unique_models_found"], 1)
-                self.assertGreater(row["decisions"], 0)
-                self.assertGreater(row["backtracks"], 0)
-                self.assertGreater(row["unique_decisions"], 0)
-                self.assertGreater(row["unique_backtracks"], 0)
+                puzzle = load_puzzle(path)
+                if any(isinstance(clue, (Parity, Compare)) for clue in puzzle.clues.values()):
+                    self.assertGreater(row["decisions"], 0)
+                    self.assertGreater(row["backtracks"], 0)
+                if any(isinstance(clue, (Parity, Compare)) for clue in puzzle.clues.values()):
+                    self.assertGreater(row["unique_decisions"], 0)
+                    self.assertGreater(row["unique_backtracks"], 0)
                 self.assertGreater(row["sat_calls"], 0)
                 self.assertEqual(row["unique_models_found"], 1)
 

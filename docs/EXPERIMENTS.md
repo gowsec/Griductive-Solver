@@ -298,9 +298,14 @@ Thực nghiệm chạy trên bản code **đã đóng băng**; nếu sửa lõi 
 
 | File | N | Thẻ lật sẵn | Loại clue có mặt | Số clue extension | `unique` | Ghi chú |
 |---|:-:|:-:|---|:-:|:-:|---|
-| `3x3_01.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 8 bước/8 waves; DPLL trong vòng giải: 0 decisions, 0 backtracks |
-| `4x4_01.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 15 bước/10 waves; DPLL trong vòng giải: 181 decisions, 136 backtracks |
-| `5x5_01.json` | 5 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 24 bước/16 waves; clue đếm tới 6 ô và parity cả lưới 25 ô; chỉ mở A1 lúc đầu; DPLL trong vòng giải: 3.073 decisions, 312 backtracks |
+| `3x3_01.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 8 bước/8 waves; DPLL trong vòng giải: 2 decisions, 1 backtrack |
+| `3x3_02.json` | 3 | 1 | `FACT`, `SAME`, `DIFFERENT` | 0 | `UNIQUE` | Đối chứng core-only, không extension |
+| `3x3_03.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Biến thể extension |
+| `4x4_01.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 15 bước/15 waves |
+| `4x4_02.json` | 4 | 1 | `FACT`, `SAME`, `DIFFERENT` | 0 | `UNIQUE` | Đối chứng core-only, không extension |
+| `4x4_03.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Biến thể extension |
+| `5x5_01.json` | 5 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Stress case; giải bằng 24 bước |
+ (test(m2): add 3x3 and 4x4 puzzle suite coverage)
 
 ### 9.3 Checklist trước khi nộp số liệu
 

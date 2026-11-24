@@ -1,0 +1,102 @@
+{
+  "n": 3,
+  "characters": {
+    "A1": {
+      "name": "Person 1",
+      "job": "Agent"
+    },
+    "B1": {
+      "name": "Person 2",
+      "job": "Agent"
+    },
+    "C1": {
+      "name": "Person 3",
+      "job": "Agent"
+    },
+    "A2": {
+      "name": "Person 4",
+      "job": "Agent"
+    },
+    "B2": {
+      "name": "Person 5",
+      "job": "Agent"
+    },
+    "C2": {
+      "name": "Person 6",
+      "job": "Agent"
+    },
+    "A3": {
+      "name": "Person 7",
+      "job": "Agent"
+    },
+    "B3": {
+      "name": "Person 8",
+      "job": "Agent"
+    },
+    "C3": {
+      "name": "Person 9",
+      "job": "Agent"
+    }
+  },
+  "solution": {
+    "A1": "CRIMINAL",
+    "B1": "INNOCENT",
+    "C1": "INNOCENT",
+    "A2": "CRIMINAL",
+    "B2": "CRIMINAL",
+    "C2": "INNOCENT",
+    "A3": "INNOCENT",
+    "B3": "CRIMINAL",
+    "C3": "CRIMINAL"
+  },
+  "initial_revealed": [
+    "A1"
+  ],
+  "clues": {
+    "A1": {
+      "type": "FACT",
+      "cell": "B1",
+      "status": "INNOCENT"
+    },
+    "B1": {
+      "type": "SAME",
+      "a": "B1",
+      "b": "C1"
+    },
+    "C1": {
+      "type": "DIFFERENT",
+      "a": "C1",
+      "b": "A2"
+    },
+    "A2": {
+      "type": "SAME",
+      "a": "A2",
+      "b": "B2"
+    },
+    "B2": {
+      "type": "DIFFERENT",
+      "a": "B2",
+      "b": "C2"
+    },
+    "C2": {
+      "type": "SAME",
+      "a": "C2",
+      "b": "A3"
+    },
+    "A3": {
+      "type": "DIFFERENT",
+      "a": "A3",
+      "b": "B3"
+    },
+    "B3": {
+      "type": "SAME",
+      "a": "B3",
+      "b": "C3"
+    },
+    "C3": {
+      "type": "FACT",
+      "cell": "A1",
+      "status": "CRIMINAL"
+    }
+  }
+}
