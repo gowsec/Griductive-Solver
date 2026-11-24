@@ -3,39 +3,39 @@
   "characters": {
     "C3": {
       "name": "Alice",
-      "job": "Mixed-clue agent"
+      "job": "Detective"
     },
     "B3": {
       "name": "Bao",
-      "job": "Mixed-clue agent"
+      "job": "Doctor"
     },
     "A3": {
       "name": "Chi",
-      "job": "Mixed-clue agent"
+      "job": "Artist"
     },
     "C2": {
       "name": "Dara",
-      "job": "Mixed-clue agent"
+      "job": "Chef"
     },
     "B2": {
       "name": "Eli",
-      "job": "Mixed-clue agent"
+      "job": "Engineer"
     },
     "A2": {
       "name": "Fiona",
-      "job": "Mixed-clue agent"
+      "job": "Lawyer"
     },
     "C1": {
       "name": "Gia",
-      "job": "Mixed-clue agent"
+      "job": "Teacher"
     },
     "B1": {
       "name": "Huy",
-      "job": "Mixed-clue agent"
+      "job": "Pilot"
     },
     "A1": {
       "name": "Iris",
-      "job": "Mixed-clue agent"
+      "job": "Writer"
     }
   },
   "solution": {

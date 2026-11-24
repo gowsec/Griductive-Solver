@@ -2,68 +2,68 @@
   "n": 4,
   "characters": {
     "A1": {
-      "name": "Person 1",
-      "job": "Agent"
+      "name": "Ari",
+      "job": "Detective"
     },
     "B1": {
-      "name": "Person 2",
-      "job": "Agent"
+      "name": "Bea",
+      "job": "Doctor"
     },
     "C1": {
-      "name": "Person 3",
-      "job": "Agent"
+      "name": "Cal",
+      "job": "Artist"
     },
     "D1": {
-      "name": "Person 4",
-      "job": "Agent"
+      "name": "Dee",
+      "job": "Chef"
     },
     "A2": {
-      "name": "Person 5",
-      "job": "Agent"
+      "name": "Eli",
+      "job": "Engineer"
     },
     "B2": {
-      "name": "Person 6",
-      "job": "Agent"
+      "name": "Fay",
+      "job": "Lawyer"
     },
     "C2": {
-      "name": "Person 7",
-      "job": "Agent"
+      "name": "Gus",
+      "job": "Teacher"
     },
     "D2": {
-      "name": "Person 8",
-      "job": "Agent"
+      "name": "Hal",
+      "job": "Pilot"
     },
     "A3": {
-      "name": "Person 9",
-      "job": "Agent"
+      "name": "Ivy",
+      "job": "Writer"
     },
     "B3": {
-      "name": "Person 10",
-      "job": "Agent"
+      "name": "Jay",
+      "job": "Baker"
     },
     "C3": {
-      "name": "Person 11",
-      "job": "Agent"
+      "name": "Kai",
+      "job": "Nurse"
     },
     "D3": {
-      "name": "Person 12",
-      "job": "Agent"
+      "name": "Lou",
+      "job": "Farmer"
     },
     "A4": {
-      "name": "Person 13",
-      "job": "Agent"
+      "name": "Mia",
+      "job": "Sailor"
     },
     "B4": {
-      "name": "Person 14",
-      "job": "Agent"
+      "name": "Ned",
+      "job": "Guard"
     },
     "C4": {
-      "name": "Person 15",
-      "job": "Agent"
+      "name": "Ora",
+      "job": "Pilot"
     },
     "D4": {
-      "name": "Person 16",
-      "job": "Agent"
+      "name": "Paz",
+      "job": "Clerk"
     }
   },
   "solution": {
