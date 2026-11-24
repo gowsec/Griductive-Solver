@@ -10,6 +10,7 @@ from griductive.engine.game_engine import GameEngine
 from griductive.io.loader import PuzzleError, load_puzzle
 from griductive.logic.agent import LogicAgent
 from griductive.logic.uniqueness import check_uniqueness
+from griductive.experiments.runner import run_puzzle
 from griductive.model.cell import CellId, Status
 from griductive.model.clue import Compare, Count, Different, Parity
 
@@ -109,10 +110,22 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertEqual(report.status, "UNIQUE")
                 self.assertEqual(report.models_found, 1)
                 self.assertEqual(report.models[0], puzzle.solution)
-                if puzzle.n >= 4:
-                    self.assertGreater(report.stats.decisions, 0)
-                if puzzle.n == 5:
-                    self.assertGreaterEqual(report.stats.backtracks, 1)
+                self.assertGreater(report.stats.decisions, 0)
+                self.assertGreaterEqual(report.stats.backtracks, 1)
+
+    def test_experiment_runner_records_unique_and_dpll_metrics(self) -> None:
+        for path in SAMPLE_PUZZLES:
+            with self.subTest(path=path.name):
+                row, trace = run_puzzle(path)
+                self.assertEqual(trace.terminal, "SOLVED")
+                self.assertEqual(row["unique"], "UNIQUE")
+                self.assertEqual(row["unique_models_found"], 1)
+                self.assertGreater(row["decisions"], 0)
+                self.assertGreater(row["backtracks"], 0)
+                self.assertGreater(row["unique_decisions"], 0)
+                self.assertGreater(row["unique_backtracks"], 0)
+                self.assertGreater(row["sat_calls"], 0)
+                self.assertEqual(row["unique_models_found"], 1)
 
     def test_game_engine_submit_uses_real_logic_agent_classify(self) -> None:
         for path in CLASSIFIABLE_PUZZLES:

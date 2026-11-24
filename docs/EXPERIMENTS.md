@@ -74,7 +74,7 @@ Mỗi lần chạy một puzzle ghi một dòng CSV. Các chỉ số được t�
 
 > Với `TIMEOUT` hoặc `ERROR`: vẫn ghi các chỉ số đã thu được đến lúc dừng, đánh dấu `status` tương ứng. **Không bỏ dòng.**
 
-**Hiện trạng `runner.py`:** CSV đang có 13 cột: `puzzle, size, primary_vars, aux_vars, clauses, sat_calls, decisions, propagations, backtracks, steps, runtime_s, status, error`. Các cột `encoding`, `clauses_peak`, `waves`, `unique`, `unique_runtime_s`, `trial` là *(kế hoạch)*, M5 bổ sung. Ngoài ra `sat_calls` hiện chưa cộng các query bên trong `engine.submit` (M5 sẽ sửa).
+`runner.py` ghi đầy đủ các cột mô tả ở mục 3.1. Các cột `decisions`, `propagations`, `backtracks` tổng hợp lượt giải; các cột `unique_*` là thống kê riêng của lượt kiểm duy nhất. `sat_calls` gồm cả truy vấn `next_forced`, truy vấn bên trong `engine.submit`, và hai lần giải uniqueness.
 
 ### 3.2 Định nghĩa "đợt lật" (wave)
 

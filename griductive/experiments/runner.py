@@ -15,12 +15,15 @@ from griductive.logic.dpll import SolverTimeout
 from griductive.logic.encoder import CNFEncoder
 from griductive.logic.entailment import Verdict
 from griductive.logic.trace import TraceLog, TraceStep
+from griductive.logic.uniqueness import check_uniqueness
 from griductive.model.cell import Status
 
 
 CSV_FIELDS = (
-    "puzzle", "size", "primary_vars", "aux_vars", "clauses", "sat_calls",
-    "decisions", "propagations", "backtracks", "steps", "runtime_s",
+    "puzzle", "size", "encoding", "primary_vars", "aux_vars", "clauses",
+    "clauses_peak", "sat_calls", "decisions", "propagations", "backtracks",
+    "steps", "waves", "runtime_s", "unique", "unique_models_found",
+    "unique_decisions", "unique_backtracks", "unique_runtime_s", "trial",
     "status", "error",
 )
 
@@ -38,16 +41,40 @@ def run_puzzle(path: str | Path, timeout: float | None = 60.0) -> tuple[dict[str
     except Exception as exc:
         trace = TraceLog(terminal="ERROR", error=f"{type(exc).__name__}: {exc}")
         return ({
-            "puzzle": puzzle_path.name, "size": "", "primary_vars": "",
-            "aux_vars": "", "clauses": "", "sat_calls": 0,
-            "decisions": 0, "propagations": 0, "backtracks": 0,
-            "steps": 0, "runtime_s": round(time.perf_counter() - started, 6),
+            "puzzle": puzzle_path.name, "size": "", "encoding": "combinatorial",
+            "primary_vars": "", "aux_vars": "", "clauses": "", "clauses_peak": "",
+            "sat_calls": 0, "decisions": 0, "propagations": 0, "backtracks": 0,
+            "steps": 0, "waves": 0, "runtime_s": round(time.perf_counter() - started, 6),
+            "unique": "", "unique_models_found": 0, "unique_decisions": 0,
+            "unique_backtracks": 0, "unique_runtime_s": 0.0, "trial": 1,
             "status": "ERROR", "error": trace.error,
         }, trace)
     agent = LogicAgent()
     engine = GameEngine(puzzle, agent.classify)
     trace = TraceLog(terminal="STUCK")
     totals = {"sat_calls": 0, "decisions": 0, "propagations": 0, "backtracks": 0}
+    clauses_peak = 0
+
+    unique_started = time.perf_counter()
+    try:
+        unique_report = check_uniqueness(tuple(puzzle.clues.values()), n=puzzle.n)
+        unique_status = unique_report.status
+        unique_models_found = unique_report.models_found
+        unique_decisions = unique_report.stats.decisions
+        unique_backtracks = unique_report.stats.backtracks
+        totals["sat_calls"] += 2 if unique_status != "UNSAT" else 1
+        totals["decisions"] += unique_decisions
+        totals["propagations"] += unique_report.stats.propagations
+        totals["backtracks"] += unique_backtracks
+    except Exception as exc:
+        unique_status = "ERROR"
+        unique_models_found = 0
+        unique_decisions = 0
+        unique_backtracks = 0
+        unique_error = f"uniqueness: {type(exc).__name__}: {exc}"
+    else:
+        unique_error = ""
+    unique_runtime = time.perf_counter() - unique_started
 
     try:
         while not engine.is_solved():
@@ -55,6 +82,11 @@ def run_puzzle(path: str | Path, timeout: float | None = 60.0) -> tuple[dict[str
                 trace.terminal = "TIMEOUT"
                 break
             state = engine.public_state()
+            try:
+                state_kb = CNFEncoder(puzzle.n).build_kb(state)
+                clauses_peak = max(clauses_peak, state_kb.n_clauses)
+            except Exception:
+                pass
             forced = agent.next_forced(state)
             queries = agent.last_queries
             _add_queries(totals, queries)
@@ -67,6 +99,7 @@ def run_puzzle(path: str | Path, timeout: float | None = 60.0) -> tuple[dict[str
             cell, verdict = forced
             status = Status.CRIMINAL if verdict is Verdict.CRIMINAL else Status.INNOCENT
             result = engine.submit(cell, status)
+            _add_queries(totals, tuple(getattr(result, "queries", ())))
             if result.outcome.name != "ACCEPTED":
                 trace.terminal = "INCONSISTENT" if result.outcome.name == "INCONSISTENT" else "ERROR"
                 trace.error = f"forced verdict rejected by engine: {result.outcome.name}"
@@ -86,13 +119,22 @@ def run_puzzle(path: str | Path, timeout: float | None = 60.0) -> tuple[dict[str
     try:
         kb = CNFEncoder(puzzle.n).build_kb(engine.public_state())
         primary_vars, aux_vars, clauses = kb.n_primary, kb.n_aux, kb.n_clauses
+        clauses_peak = max(clauses_peak, clauses)
     except Exception:
         primary_vars, aux_vars, clauses = puzzle.n * puzzle.n, 0, 0
+
+    if unique_error and not trace.error:
+        trace.error = unique_error
     row = {
-        "puzzle": puzzle_path.name, "size": puzzle.n,
+        "puzzle": puzzle_path.name, "size": puzzle.n, "encoding": "combinatorial",
         "primary_vars": primary_vars, "aux_vars": aux_vars, "clauses": clauses,
-        **totals, "steps": len(trace.steps),
-        "runtime_s": round(time.perf_counter() - started, 6),
+        "clauses_peak": clauses_peak,
+        **totals, "steps": len(trace.steps), "waves": len(trace.steps),
+        "runtime_s": round(time.perf_counter() - started - unique_runtime, 6),
+        "unique": unique_status, "unique_models_found": unique_models_found,
+        "unique_decisions": unique_decisions,
+        "unique_backtracks": unique_backtracks,
+        "unique_runtime_s": round(unique_runtime, 6), "trial": 1,
         "status": trace.terminal, "error": trace.error,
     }
     return row, trace
