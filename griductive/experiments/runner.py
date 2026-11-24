@@ -140,13 +140,22 @@ def run_suite(
     timeout: float | None = 60.0,
     name_filter: str | None = None,
     encoding: Encoding = "combinatorial",
+    repeat: int = 5,
 ) -> list[dict[str, Any]]:
-    """Run sorted ``*.json`` puzzles, preserve failures, optionally write CSV."""
+    """Warm up, then run each sorted puzzle ``repeat`` times and optionally write CSV."""
+    if repeat < 1:
+        raise ValueError("repeat must be at least 1")
     suite_path = Path(suite)
     paths = sorted(suite_path.glob("*.json"), key=lambda item: item.name)
     if name_filter:
         paths = [path for path in paths if name_filter.lower() in path.name.lower()]
-    rows = [run_puzzle(path, timeout, encoding)[0] for path in paths]
+    rows: list[dict[str, Any]] = []
+    for path in paths:
+        run_puzzle(path, timeout, encoding)  # warmup is intentionally not recorded
+        for trial in range(1, repeat + 1):
+            row, _ = run_puzzle(path, timeout, encoding)
+            row["trial"] = trial
+            rows.append(row)
     if output is not None:
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -163,13 +172,14 @@ def main() -> None:
     parser.add_argument("--suite", default="puzzles/")
     parser.add_argument("--out", default="results/experiment.csv")
     parser.add_argument("--timeout", type=float, default=60.0)
+    parser.add_argument("--repeat", type=int, default=5)
     parser.add_argument("--filter", dest="name_filter")
     parser.add_argument(
         "--encoding", choices=("combinatorial", "sequential"),
         default="combinatorial",
     )
     args = parser.parse_args()
-    rows = run_suite(args.suite, args.out, args.timeout, args.name_filter, args.encoding)
+    rows = run_suite(args.suite, args.out, args.timeout, args.name_filter, args.encoding, args.repeat)
     print(f"Wrote {len(rows)} puzzle result(s) to {args.out}")
 
 

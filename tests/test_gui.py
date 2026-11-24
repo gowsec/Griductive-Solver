@@ -1,6 +1,7 @@
 """Unit tests for Tkinter GUI instantiation and basic interaction."""
 
 import unittest
+from pathlib import Path
 try:
     import tkinter as tk
 except (ImportError, ModuleNotFoundError) as error:
@@ -78,7 +79,7 @@ class GUITests(unittest.TestCase):
 
         path = Path(__file__).resolve().parents[1] / "puzzles" / "3x3_01.json"
         engine = GameEngine.load(str(path), LogicAgent().classify)
-        gui = GriductiveGUI(self.root, engine)
+        gui = self.GriductiveGUI(self.root, engine)
         gui._selected_clue_index = 0
         gui.on_clue_selected()
         clue = engine.public_state().revealed_clues[0]
@@ -95,7 +96,7 @@ class GUITests(unittest.TestCase):
         path = Path(__file__).resolve().parents[1] / "puzzles" / "3x3_01.json"
         agent = LogicAgent()
         engine = GameEngine.load(str(path), agent.classify)
-        gui = GriductiveGUI(self.root, engine)
+        gui = self.GriductiveGUI(self.root, engine)
         trace = TraceLog()
         list(deduction_loop(engine, agent, trace))
         gui.refresh()
@@ -107,7 +108,7 @@ class GUITests(unittest.TestCase):
         from griductive.engine.game_engine import GameEngine
         from griductive.logic.agent import LogicAgent
 
-        gui = GriductiveGUI(self.root, DummyEngine())
+        gui = self.GriductiveGUI(self.root, DummyEngine())
         puzzle_dir = Path(__file__).resolve().parents[1] / "puzzles"
         for size in (3, 4, 5, 3):
             gui.selected_cell = CellId(1, 1)
@@ -120,7 +121,13 @@ class GUITests(unittest.TestCase):
             self.assertIn(f"{size}×{size}", self.root.title())
             self.assertEqual(gui.engine.n, size)
             for row in range(1, size + 1):
+                # No forced minimum height: rows share the available space.
                 self.assertEqual(gui.grid_frame.grid_rowconfigure(row, "minsize"), 0)
+            self.root.update_idletasks()
+            if size >= 5:
+                # Compact cards: the whole 5x5 grid must stay well within a
+                # 760px-high window (header/footer/panel chrome take ~200px).
+                self.assertLessEqual(gui.grid_frame.winfo_reqheight(), 560)
             if size == 3 and gui._grid_dimension == 3:
                 for track in (4, 5):
                     self.assertEqual(gui.grid_frame.grid_rowconfigure(track, "weight"), 0)
@@ -131,6 +138,9 @@ class GUITests(unittest.TestCase):
             character = gui.engine.puzzle.characters[bottom_right]
             self.assertEqual(
                 gui.cards[bottom_right]["name_label"].cget("text"), character.name
+            )
+            self.assertEqual(
+                gui.cards[bottom_right]["job_label"].cget("text"), character.job
             )
             self.assertEqual(
                 gui.cards[bottom_right]["coord_label"].cget("text"),

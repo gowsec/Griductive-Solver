@@ -107,7 +107,7 @@ def cmd_experiment(args: argparse.Namespace) -> int:
         print(f"LỖI: không thấy thư mục {suite}", file=sys.stderr)
         return EXIT_USAGE
 
-    rows = run_suite(suite, args.out, args.timeout, args.name_filter, args.encoding)
+    rows = run_suite(suite, args.out, args.timeout, args.name_filter, args.encoding, args.repeat)
     if not rows:
         print(f"Không có file *.json nào trong {suite} (kiểm tra puzzles/ và --filter).", file=sys.stderr)
         return EXIT_USAGE
@@ -158,6 +158,7 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--suite", default="puzzles/")
     exp.add_argument("--out", default="results/experiment.csv")
     exp.add_argument("--timeout", type=float, default=60.0)
+    exp.add_argument("--repeat", type=int, default=5, help="số trial sau một lần warmup")
     exp.add_argument("--filter", dest="name_filter")
     exp.add_argument(
         "--encoding", choices=("combinatorial", "sequential"),
