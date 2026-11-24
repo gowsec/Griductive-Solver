@@ -1,0 +1,21 @@
+﻿Griductive Solver experiment run
+
+Git commit (git rev-parse HEAD): 8bfe30d52617b2f4efa999bd59fe24a5cf3cca41
+Working tree: modified during this run; source changes were not committed, so CSVs correspond to this commit plus the current working tree.
+Puzzle suite: puzzles/*.json (7 standard puzzles plus 8 bad/stuck cases)
+
+Commands:
+python main.py experiment --suite puzzles/ --timeout 60 --repeat 5 --encoding combinatorial --out results/comb.csv
+python main.py experiment --suite puzzles/ --timeout 60 --repeat 5 --encoding sequential --out results/seq.csv
+python -m griductive.experiments.report_tables
+
+Protocol: for each puzzle and encoding, one unrecorded warmup followed by trial=1..5. Runtime reports median across those five trials.
+
+Machine configuration:
+CPU: AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD
+Logical processors: 12
+RAM: 7.21 GiB
+OS: Windows-11-10.0.26200-SP0
+Python: Python 3.15.2
+Power state and concurrent workload: unavailable to this restricted environment
+
