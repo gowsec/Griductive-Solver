@@ -1,17 +1,25 @@
 """Unit tests for Tkinter GUI instantiation and basic interaction."""
 
 import unittest
-import tkinter as tk
-from pathlib import Path
+try:
+    import tkinter as tk
+except (ImportError, ModuleNotFoundError) as error:
+    tk = None
+    TKINTER_IMPORT_ERROR = error
+else:
+    TKINTER_IMPORT_ERROR = None
+
 
 from griductive.engine.dummy_engine import DummyEngine, VerdictOutcome, VerdictResult
-from griductive.gui.app import GriductiveGUI
 from griductive.model.cell import CellId, Status
 
 
+@unittest.skipIf(TKINTER_IMPORT_ERROR is not None, "Tkinter is unavailable")
 class GUITests(unittest.TestCase):
     def setUp(self) -> None:
         try:
+            from griductive.gui.app import GriductiveGUI
+            self.GriductiveGUI = GriductiveGUI
             self.root = tk.Tk()
             self.root.withdraw()  # Hide root window during testing
         except Exception as e:
@@ -23,7 +31,7 @@ class GUITests(unittest.TestCase):
 
     def test_gui_initialization_with_dummy_engine(self) -> None:
         engine = DummyEngine()
-        gui = GriductiveGUI(self.root, engine)
+        gui = self.GriductiveGUI(self.root, engine)
         self.assertEqual(gui.engine.n, 3)
         self.assertIn(CellId(0, 0), engine.public_state().proved)
         self.assertEqual(gui.cards[CellId(0, 0)]["name_label"].cget("text"), "Alice")
@@ -31,13 +39,13 @@ class GUITests(unittest.TestCase):
 
     def test_gui_restart(self) -> None:
         engine = DummyEngine()
-        gui = GriductiveGUI(self.root, engine)
+        gui = self.GriductiveGUI(self.root, engine)
         gui.on_restart()
         self.assertEqual(len(engine.public_state().proved), 1)
 
     def test_gui_verdict_outcomes(self) -> None:
         engine = DummyEngine()
-        gui = GriductiveGUI(self.root, engine)
+        gui = self.GriductiveGUI(self.root, engine)
         cell = CellId(0, 1)
 
         # Test NOT_PROVABLE handling
@@ -52,7 +60,7 @@ class GUITests(unittest.TestCase):
 
     def test_gui_clue_highlight(self) -> None:
         engine = DummyEngine()
-        gui = GriductiveGUI(self.root, engine)
+        gui = self.GriductiveGUI(self.root, engine)
         state = engine.public_state()
         self.assertTrue(len(state.revealed_clues) > 0)
 
