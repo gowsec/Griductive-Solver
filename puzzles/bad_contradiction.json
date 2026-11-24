@@ -1,9 +1,22 @@
 {
-  "n": 1,
-  "characters": {"A1": {"name": "Alex", "job": "Detective"}},
-  "solution": {"A1": "CRIMINAL"},
+  "n": 2,
+  "characters": {
+    "A1": {"name": "Alex", "job": "Detective"},
+    "B1": {"name": "Bea", "job": "Doctor"},
+    "A2": {"name": "Cal", "job": "Artist"},
+    "B2": {"name": "Dee", "job": "Chef"}
+  },
+  "solution": {
+    "A1": "CRIMINAL",
+    "B1": "INNOCENT",
+    "A2": "INNOCENT",
+    "B2": "CRIMINAL"
+  },
   "initial_revealed": [],
   "clues": {
-    "A1": {"type": "FACT", "cell": "A1", "status": "INNOCENT"}
+    "A1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
+    "B1": {"type": "FACT", "cell": "A1", "status": "INNOCENT"},
+    "A2": {"type": "FACT", "cell": "A2", "status": "INNOCENT"},
+    "B2": {"type": "FACT", "cell": "B2", "status": "CRIMINAL"}
   }
 }

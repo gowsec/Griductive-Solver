@@ -548,4 +548,4 @@ Trong lúc chờ: M4 test DPLL bằng CNF viết tay (list số nguyên); M5 dù
 | 22/11/2026 | `TraceLog.terminal` thêm `TIMEOUT`, thêm trường `error`; `deduction_loop` nhận tham số `trace` | M5 | M1 |
 | 22/11/2026 | `check_uniqueness` nhận `PublicState` hoặc danh sách clue, thêm `check_uniqueness_cnf` | M5 | M1 |
 | 22/11/2026 | Gộp mã hóa đếm vào `encoder.py` (không có `cardinality.py`); encoder không tự chuyển sang sequential | M3 | M1 |
-| _chờ merge_ | `Clue.describe(names=None)` thêm tham số tùy chọn, tương thích ngược | M2 | M1 |
+| 23/11/2026 | `Clue.describe(names=None)` hỗ trợ tên nhân vật, giữ tương thích khi gọi không tham số | M2 | M1 |

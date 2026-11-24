@@ -11,6 +11,7 @@ from griductive.io.loader import PuzzleError, load_puzzle
 from griductive.logic.agent import LogicAgent
 from griductive.logic.uniqueness import check_uniqueness
 from griductive.model.cell import CellId, Status
+from griductive.model.clue import Compare, Count, Different, Parity
 
 try:
     holds = import_module("griductive.logic.semantics").holds
@@ -40,6 +41,30 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertEqual(len(puzzle.characters), puzzle.n**2)
                 self.assertEqual(len(puzzle.clues), puzzle.n**2)
                 self.assertIn(CellId(0, 0), puzzle.initial_revealed)
+                self.assertEqual(
+                    {type(clue) for clue in puzzle.clues.values()},
+                    {Count, Different, Compare, Parity},
+                )
+                self.assertEqual(
+                    {
+                        clue.op
+                        for clue in puzzle.clues.values()
+                        if isinstance(clue, Count)
+                    },
+                    {Count.EQ, Count.GE, Count.LE},
+                )
+                self.assertEqual(
+                    sum(
+                        isinstance(clue, (Parity, Compare))
+                        for clue in puzzle.clues.values()
+                    ),
+                    3,
+                )
+                if puzzle.n == 5:
+                    self.assertEqual(
+                        max(len(clue.cells(puzzle.n)) for clue in puzzle.clues.values()),
+                        25,
+                    )
 
     @unittest.skipIf(
         not SEMANTICS_AVAILABLE,
@@ -84,12 +109,23 @@ class SamplePuzzleTests(unittest.TestCase):
                 self.assertEqual(report.status, "UNIQUE")
                 self.assertEqual(report.models_found, 1)
                 self.assertEqual(report.models[0], puzzle.solution)
+                if puzzle.n >= 4:
+                    self.assertGreater(report.stats.decisions, 0)
+                if puzzle.n == 5:
+                    self.assertGreaterEqual(report.stats.backtracks, 1)
 
     def test_game_engine_submit_uses_real_logic_agent_classify(self) -> None:
         for path in CLASSIFIABLE_PUZZLES:
             with self.subTest(path=path.name):
                 agent = LogicAgent()
                 engine = GameEngine.load(str(path), agent.classify)
+                initially_revealed = len(engine.public_state().revealed_clues)
+                if engine.n == 5:
+                    initially_revealed_cells = engine.puzzle.initial_revealed
+                    revealed_rows = {cell.row for cell in initially_revealed_cells}
+                    self.assertEqual(initially_revealed, 1)
+                    self.assertLess(len(revealed_rows), engine.n)
+                steps = 0
                 while not engine.is_solved():
                     state = engine.public_state()
                     forced = None
@@ -115,11 +151,16 @@ class SamplePuzzleTests(unittest.TestCase):
                     result = engine.submit(cell, submitted)
                     self.assertIs(result.outcome, VerdictOutcome.ACCEPTED)
                     self.assertTrue(result.queries)
+                    steps += 1
                 self.assertEqual(engine.public_state().proved, engine.puzzle.solution)
+                self.assertEqual(
+                    steps, engine.n**2 - len(engine.puzzle.initial_revealed)
+                )
+                if engine.n == 5:
+                    self.assertGreaterEqual(steps, 20)
 
     def test_invalid_puzzle_fixtures_are_rejected_by_loader(self) -> None:
         invalid_puzzles = (
-            "bad_contradiction.json",
             "bad_invalid_k.json",
             "bad_missing_cell.json",
             "bad_unknown_cell.json",
@@ -129,6 +170,9 @@ class SamplePuzzleTests(unittest.TestCase):
         for filename in invalid_puzzles:
             with self.subTest(filename=filename), self.assertRaises(PuzzleError):
                 load_puzzle(ROOT / "puzzles" / filename)
+
+        with self.assertRaisesRegex(PuzzleError, r"\$\.clues\.B1"):
+            load_puzzle(ROOT / "puzzles/bad_contradiction.json")
 
     def test_m5_distinguishes_not_unique_and_stuck_puzzles(self) -> None:
         not_unique = load_puzzle(ROOT / "puzzles/bad_not_unique.json")

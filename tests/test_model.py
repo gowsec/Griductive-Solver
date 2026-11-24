@@ -4,7 +4,7 @@ import unittest
 from dataclasses import FrozenInstanceError
 
 from griductive.model.cell import CellId, Character, Status
-from griductive.model.clue import Compare, Count, Fact, Parity
+from griductive.model.clue import Compare, Count, Different, Fact, Parity, Same
 from griductive.model.region import Region, RegionKind, RegionResolver
 
 
@@ -127,6 +127,47 @@ class ClueModelTests(unittest.TestCase):
             (CellId(0, 1), CellId(1, 1), CellId(2, 1)),
         )
         self.assertTrue(compare.describe())
+
+    def test_describe_uses_optional_character_names(self) -> None:
+        alice = CellId(0, 0)
+        bao = CellId(0, 1)
+        names = {alice: "Alice", bao: "Bao"}
+        row = Region(RegionKind.ROW, row=0)
+
+        self.assertEqual(
+            Fact("fact", alice, Status.CRIMINAL).describe(names),
+            "Alice (A1) is CRIMINAL",
+        )
+        self.assertIn(
+            "Alice (A1) and Bao (B1)", Same("same", alice, bao).describe(names)
+        )
+        self.assertIn(
+            "Alice (A1) and Bao (B1)",
+            Different("different", alice, bao).describe(names),
+        )
+        self.assertIn(
+            "Alice (A1), Bao (B1)",
+            Count("count", Count.EQ, 1, row).describe(names),
+        )
+        self.assertIn(
+            "Alice (A1), Bao (B1)",
+            Parity("parity", row, Parity.ODD).describe(names),
+        )
+        compare = Compare(
+            "compare",
+            Region(RegionKind.CELLS, cells=(alice,)),
+            Compare.GT,
+            Region(RegionKind.CELLS, cells=(bao,)),
+        )
+        self.assertIn("Alice", compare.describe(names))
+        self.assertIn("Bao", compare.describe(names))
+
+        neighbors = Parity(
+            "neighbors",
+            Region(RegionKind.NEIGHBORS, center=CellId(1, 1)),
+            Parity.ODD,
+        )
+        self.assertIn("neighbors of Mia (B2)", neighbors.describe({CellId(1, 1): "Mia"}))
 
 
 if __name__ == "__main__":

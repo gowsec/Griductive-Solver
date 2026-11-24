@@ -39,6 +39,7 @@ Thiết kế thực nghiệm đánh giá toàn hệ thống: bộ puzzle, chỉ 
 Quy tắc:
 - Mọi puzzle chuẩn phải qua `check_uniqueness` = `UNIQUE` **trước khi** vào bộ.
 - Mỗi puzzle ghi trong bảng mô tả ở cuối file này: kích thước, số thẻ lật sẵn, loại clue có mặt, số clue extension.
+- `Số clue extension` là tổng số clue `PARITY` và `COMPARE`.
 - Puzzle bị loader từ chối (`bad_contradiction`, `bad_solution_mismatch`, `bad_invalid_k`, `bad_missing_cell`, `bad_unknown_cell`, `bad_schema`) thuộc test của loader (`PuzzleError`), không dùng trong thực nghiệm hiệu năng. Khi chạy `experiment` chúng được ghi `status = ERROR` với `size` trống (M5 sẽ ghi `N/A`).
 
 ---
@@ -189,11 +190,11 @@ Nguyên tắc: **không loại bất kỳ puzzle nào khỏi kết quả** vì l
 
 | Puzzle | Kết quả mong đợi | Kiểm chứng |
 |---|---|---|
-| `bad_contradiction` | Loader từ chối clue mâu thuẫn với solution đã khai báo | `PuzzleError` nêu rõ lỗi dữ liệu |
+| `bad_contradiction` | Hai clue `FACT` gán trạng thái đối nghịch cho A1; loader từ chối clue thứ hai | `PuzzleError` tại `$.clues.B1` |
 | `bad_not_unique` | `status = STUCK`; `unique = NOT_UNIQUE` | Agent **không đoán**; số bước < số ô chưa giải |
 | `bad_stuck` | `status = STUCK`; `unique = UNIQUE` | Khác `bad_not_unique`: puzzle hợp lệ nhưng thiếu thông tin ban đầu |
 
-**Ghi chú về `INCONSISTENT`:** `loader` chặn mọi puzzle vô nghiệm ngay khi đọc file (clue mâu thuẫn với `solution` đã khai báo, như `bad_contradiction` và `bad_solution_mismatch`), nên không có file puzzle nào cho ra `status = INCONSISTENT`. Trạng thái `INCONSISTENT` của solver/agent được kiểm chứng bằng **unit test** trên `PublicState` tạo tay (ví dụ `test_agt_08_agent_on_inconsistent_state` trong `tests/test_agent.py`, các test UNSAT trong `tests/test_dpll.py`), không bằng thực nghiệm.
+**Ghi chú về `INCONSISTENT`:** loader xác thực từng clue bằng `solution` và từ chối dữ liệu không nhất quán trước khi chạy puzzle. `bad_contradiction` có hai clue `FACT` đối nghịch (clue thứ hai sai với solution); `bad_solution_mismatch` có một clue sai với solution. Vì vậy không có file puzzle nào cho ra `status = INCONSISTENT`. Trạng thái đó được kiểm chứng bằng **unit test** trên `PublicState` tạo tay (ví dụ `test_agt_08_agent_on_inconsistent_state` trong `tests/test_agent.py`, các test UNSAT trong `tests/test_dpll.py`), không bằng thực nghiệm.
 
 Báo cáo như **kết quả thành công** của hệ thống (hệ thống nhận biết đúng), không phải failure. Phân biệt rõ với failure thật (`TIMEOUT`, `ERROR`) ở mục 6.
 
@@ -297,7 +298,9 @@ Thực nghiệm chạy trên bản code **đã đóng băng**; nếu sửa lõi 
 
 | File | N | Thẻ lật sẵn | Loại clue có mặt | Số clue extension | `unique` | Ghi chú |
 |---|:-:|:-:|---|:-:|:-:|---|
-| _điền_ | | | | | | |
+| `3x3_01.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Giải bằng 8 lần suy diễn; DPLL: 2 decisions, 1 backtrack |
+| `4x4_01.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Giải bằng 15 lần suy diễn; DPLL: 2 decisions, 1 backtrack |
+| `5x5_01.json` | 5 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | 24 wave; clue đếm tới 6 ô và parity cả lưới 25 ô; chỉ mở A1 lúc đầu; DPLL: 2 decisions, 1 backtrack |
 
 ### 9.3 Checklist trước khi nộp số liệu
 
