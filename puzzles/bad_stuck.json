@@ -1,0 +1,26 @@
+{
+  "n": 2,
+  "characters": {
+    "A1": {"name": "Alice", "job": "Detective"},
+    "B1": {"name": "Bao", "job": "Doctor"},
+    "A2": {"name": "Chi", "job": "Artist"},
+    "B2": {"name": "Dara", "job": "Chef"}
+  },
+  "solution": {
+    "A1": "CRIMINAL",
+    "B1": "INNOCENT",
+    "A2": "CRIMINAL",
+    "B2": "INNOCENT"
+  },
+  "initial_revealed": ["A1"],
+  "clues": {
+    "A1": {
+      "type": "EXACTLY",
+      "k": 1,
+      "region": {"kind": "ROW", "row": 2}
+    },
+    "B1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
+    "A2": {"type": "FACT", "cell": "B1", "status": "INNOCENT"},
+    "B2": {"type": "FACT", "cell": "A2", "status": "CRIMINAL"}
+  }
+}

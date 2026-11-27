@@ -4,7 +4,7 @@ Thiết kế thực nghiệm đánh giá toàn hệ thống: bộ puzzle, chỉ 
 
 - Chủ sở hữu: M5 (chạy, phân tích); M2 hỗ trợ vẽ bảng/biểu đồ; M3, M4 cung cấp phân tích chuyên môn
 - Phụ thuộc: [`ARCHITECTURE.md`](ARCHITECTURE.md), [`CNF_MAPPING.md`](CNF_MAPPING.md), [`TEST_CASES.md`](TEST_CASES.md)
-- Trạng thái: `DRAFT`
+- Trạng thái: `DRAFT` (đã đồng bộ với code ngày 22/11/2026; các phần chưa cài đặt được đánh dấu *(kế hoạch)*)
 
 ---
 
@@ -34,12 +34,13 @@ Thiết kế thực nghiệm đánh giá toàn hệ thống: bộ puzzle, chỉ 
 | 4×4 | `4x4_*.json` | 3 | Chính |
 | 5×5 | `5x5_*.json` | 1 | Stress case |
 | Có extension | trong nhóm trên (ít nhất 1 puzzle 3×3 và 1 puzzle 4×4) | | E4 |
-| Lỗi | `bad_*.json` | 3 hợp lệ về schema (`bad_contradiction`, `bad_not_unique`, `bad_stuck`) | E6 |
+| Lỗi | `bad_*.json` | 2 hợp lệ về schema (`bad_not_unique`, `bad_stuck`) dùng cho thực nghiệm; các `bad_*` còn lại bị loader từ chối | E6 |
 
 Quy tắc:
 - Mọi puzzle chuẩn phải qua `check_uniqueness` = `UNIQUE` **trước khi** vào bộ.
 - Mỗi puzzle ghi trong bảng mô tả ở cuối file này: kích thước, số thẻ lật sẵn, loại clue có mặt, số clue extension.
-- Puzzle lỗi về schema (`bad_invalid_k`, ...) thuộc test của loader, không dùng trong thực nghiệm hiệu năng.
+- `Số clue extension` là tổng số clue `PARITY` và `COMPARE`.
+- Puzzle bị loader từ chối (`bad_contradiction`, `bad_solution_mismatch`, `bad_invalid_k`, `bad_missing_cell`, `bad_unknown_cell`, `bad_schema`) thuộc test của loader (`PuzzleError`), không dùng trong thực nghiệm hiệu năng. Khi chạy `experiment` chúng được ghi `status = ERROR` với `size` trống (M5 sẽ ghi `N/A`).
 
 ---
 
@@ -73,6 +74,8 @@ Mỗi lần chạy một puzzle ghi một dòng CSV. Các chỉ số được t�
 
 > Với `TIMEOUT` hoặc `ERROR`: vẫn ghi các chỉ số đã thu được đến lúc dừng, đánh dấu `status` tương ứng. **Không bỏ dòng.**
 
+**Hiện trạng `runner.py`:** runner dùng chung `deduction_loop` với GUI; CSV ghi đầy đủ các cột ở mục 3.1 gồm `encoding`, thống kê KB/DPLL (`sat_calls`, `decisions`, `propagations`, `backtracks` tổng hợp cả lượt giải lẫn lượt kiểm duy nhất), `steps`, `waves`, thông tin uniqueness (`unique`, `unique_models_found`, `unique_decisions`, `unique_backtracks`, `unique_runtime_s`), `status`/`error` và `trial`. `sat_calls` bao gồm cả truy vấn tìm ô forced, truy vấn xác nhận trong `engine.submit`, và các lần gọi DPLL của `check_uniqueness`. Khi `TIMEOUT` vẫn giữ nguyên thống kê DPLL đã thu được đến thời điểm dừng.
+
 ### 3.2 Định nghĩa "đợt lật" (wave)
 
 Suy diễn là **đơn điệu**: một ô đã được suy ra thì vẫn được suy ra khi KB lớn hơn. Vì vậy có thể gom bước theo đợt mà không đổi kết quả cuối:
@@ -87,7 +90,7 @@ Suy diễn là **đơn điệu**: một ô đã được suy ra thì vẫn đư�
 
 ### 3.3 Quy tắc đếm
 
-- `sat_calls` gồm cả truy vấn kiểm tra nhất quán KB (`SAT(KB)`) và hai truy vấn cho mỗi ô trong `classify`. Tính cả truy vấn của các ô **không** được suy ra (UNKNOWN), vì chúng là chi phí thật.
+- `sat_calls` gồm **hai** truy vấn (`KB ∧ ¬C` và `KB ∧ C`) cho mỗi ô được `classify`; không có truy vấn `SAT(KB)` riêng. Tính cả truy vấn của các ô **không** được suy ra (UNKNOWN), vì chúng là chi phí thật.
 - Thống kê của `check_uniqueness` **không** cộng vào các cột giải; ghi riêng (`unique_*`).
 - Chi phí của engine (hiển thị, lật thẻ) rất nhỏ; vẫn nằm trong `runtime_s` vì đo toàn vòng lặp.
 - Số liệu DPLL chỉ so sánh được khi cùng chiến lược chọn biến và cùng cấu hình (pure-literal bật/tắt).
@@ -99,17 +102,20 @@ Suy diễn là **đơn điệu**: một ô đã được suy ra thì vẫn đư�
 ### 4.1 Lệnh
 
 ```bash
-# Toàn bộ bộ puzzle, cấu hình mặc định
-python main.py experiment --suite puzzles/ --timeout 60 --out results/
-
-# E2: so sánh mã hóa
-python main.py experiment --suite puzzles/ --encoding combinatorial --out results/comb/
-python main.py experiment --suite puzzles/ --encoding sequential    --out results/seq/
+# Toàn bộ bộ puzzle, cấu hình mặc định (--out là một FILE .csv)
+python main.py experiment --suite puzzles/ --timeout 60 --out results/experiment.csv
 
 # Chỉ một nhóm
-python main.py experiment --suite puzzles/ --filter 4x4 --out results/
+python main.py experiment --suite puzzles/ --filter 4x4 --out results/4x4.csv
 
-# Sinh bảng và biểu đồ
+# Giải một puzzle, in từng bước và xuất trace
+python main.py solve puzzles/4x4_01.json --trace-csv results/trace_4x4.csv
+
+# E2: so sánh mã hóa
+python main.py experiment --suite puzzles/ --encoding combinatorial --out results/comb.csv
+python main.py experiment --suite puzzles/ --encoding sequential    --out results/seq.csv
+
+# (kế hoạch, M2/M5) Sinh bảng và biểu đồ
 python -m griductive.experiments.report_tables --in results/ --out results/figures/
 ```
 
@@ -136,7 +142,7 @@ Ghi vào bảng ở mục 9 trước khi chạy: CPU, số nhân, RAM, hệ đi�
 | Vượt timeout | Dừng, ghi `status = TIMEOUT` + chỉ số đã thu | Liệt kê trong bảng; phân tích nguyên nhân (vùng lớn? DPLL chậm?) |
 | Exception | Bắt, ghi `status = ERROR` + `error`, **tiếp tục** puzzle sau | Liệt kê; sửa lỗi hoặc ghi là hạn chế |
 | `STUCK` | Ghi bình thường (là kết quả hợp lệ với puzzle `bad_stuck`/`bad_not_unique`) | Giải thích vì sao không tiến thêm |
-| `INCONSISTENT` | Ghi bình thường | Xác nhận khớp kỳ vọng ở E6 |
+| `INCONSISTENT` | Không xuất hiện với puzzle hợp lệ (loader đã chặn); chỉ kiểm bằng unit test | Xem ghi chú dưới bảng E6 |
 
 Nguyên tắc: **không loại bất kỳ puzzle nào khỏi kết quả** vì lỗi hoặc chậm. Nếu bộ puzzle thay đổi giữa chừng thì chạy lại toàn bộ.
 
@@ -150,7 +156,7 @@ Nguyên tắc: **không loại bất kỳ puzzle nào khỏi kết quả** vì l
 - **Ghi:** đủ 6 nhóm chỉ số cho từng puzzle.
 - **Bảng kết quả:** mỗi dòng một puzzle; thêm dòng trung bình theo nhóm kích thước.
 - **Biểu đồ:** cột hoặc đường theo `size` cho `clauses`, `sat_calls`, `decisions`, `runtime_s` (trục log nếu chênh lệch lớn).
-- **Quan sát cần trả lời:** chi phí tăng theo `N` thế nào; `sat_calls` xấp xỉ bao nhiêu mỗi bước (kỳ vọng ~ `2·|unsolved| + 1` mỗi lần `classify_all`); ai chiếm `runtime` (số lần gọi hay độ khó mỗi lần).
+- **Quan sát cần trả lời:** chi phí tăng theo `N` thế nào; `sat_calls` xấp xỉ bao nhiêu mỗi bước (kỳ vọng tối đa `2·|unsolved|` mỗi lần tìm ô forced, vì `next_forced` dừng ở ô forced đầu tiên); ai chiếm `runtime` (số lần gọi hay độ khó mỗi lần).
 
 ### E2: Combinatorial và sequential counter (RQ2)
 
@@ -184,17 +190,19 @@ Nguyên tắc: **không loại bất kỳ puzzle nào khỏi kết quả** vì l
 
 | Puzzle | Kết quả mong đợi | Kiểm chứng |
 |---|---|---|
-| `bad_contradiction` | `status = INCONSISTENT`; `unique = UNSAT` | Terminal đúng; không có verdict nào được đưa ra |
+| `bad_contradiction` | Hai clue `FACT` gán trạng thái đối nghịch cho A1; loader từ chối clue thứ hai | `PuzzleError` tại `$.clues.B1` |
 | `bad_not_unique` | `status = STUCK`; `unique = NOT_UNIQUE` | Agent **không đoán**; số bước < số ô chưa giải |
 | `bad_stuck` | `status = STUCK`; `unique = UNIQUE` | Khác `bad_not_unique`: puzzle hợp lệ nhưng thiếu thông tin ban đầu |
+
+**Ghi chú về `INCONSISTENT`:** loader xác thực từng clue bằng `solution` và từ chối dữ liệu không nhất quán trước khi chạy puzzle. `bad_contradiction` có hai clue `FACT` đối nghịch (clue thứ hai sai với solution); `bad_solution_mismatch` có một clue sai với solution. Vì vậy không có file puzzle nào cho ra `status = INCONSISTENT`. Trạng thái đó được kiểm chứng bằng **unit test** trên `PublicState` tạo tay (ví dụ `test_agt_08_agent_on_inconsistent_state` trong `tests/test_agent.py`, các test UNSAT trong `tests/test_dpll.py`), không bằng thực nghiệm.
 
 Báo cáo như **kết quả thành công** của hệ thống (hệ thống nhận biết đúng), không phải failure. Phân biệt rõ với failure thật (`TIMEOUT`, `ERROR`) ở mục 6.
 
 ### E7: Stress (RQ7)
 
 - **Dữ liệu:** `5x5_*` và, nếu có thể, một puzzle `5x5` cố ý có vùng `CELLS` lớn (ví dụ 13 ô) để buộc chọn cách mã hóa.
-- **Ghi:** thời gian, số clause, cảnh báo chuyển sang sequential (nếu có), timeout.
-- **Quan sát:** nút thắt nằm ở encoder (nổ clause) hay solver; ngưỡng 50 000 clause có hợp lý không.
+- **Ghi:** thời gian, số clause, timeout. Encoder **không tự chuyển** sang sequential; phải chạy riêng hai cấu hình `--encoding` *(kế hoạch)* để so sánh.
+- **Quan sát:** nút thắt nằm ở encoder (nổ clause) hay solver; ví dụ đã đo: `Count EQ 12` trên 25 ô, combinatorial sinh khoảng 9,6 triệu clause (~5 giây chỉ để mã hóa).
 
 ---
 
@@ -207,6 +215,8 @@ Báo cáo như **kết quả thành công** của hệ thống (hệ thống nh�
 | Puzzle | N | Primary | Aux | Clauses | SAT calls | Decisions | Propagations | Backtracks | Steps | Waves | Runtime (s) | Status |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|---|
 | _điền từ CSV_ | | | | | | | | | | | | |
+
+> Runner hiện ghi `Waves` theo định nghĩa tại mục 3.2; các ô được suy ra trong cùng snapshot clue thuộc cùng một wave.
 
 **Bảng 2. Failure, timeout và kết quả bất thường** (không được bỏ trống; ghi "không có" nếu không có):
 
@@ -288,7 +298,14 @@ Thực nghiệm chạy trên bản code **đã đóng băng**; nếu sửa lõi 
 
 | File | N | Thẻ lật sẵn | Loại clue có mặt | Số clue extension | `unique` | Ghi chú |
 |---|:-:|:-:|---|:-:|:-:|---|
-| _điền_ | | | | | | |
+| `3x3_01.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 8 bước/8 waves; DPLL trong vòng giải: 2 decisions, 1 backtrack |
+| `3x3_02.json` | 3 | 1 | `FACT`, `SAME`, `DIFFERENT` | 0 | `UNIQUE` | Đối chứng core-only, không extension |
+| `3x3_03.json` | 3 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Biến thể extension |
+| `4x4_01.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | SOLVED bằng 15 bước/15 waves |
+| `4x4_02.json` | 4 | 1 | `FACT`, `SAME`, `DIFFERENT` | 0 | `UNIQUE` | Đối chứng core-only, không extension |
+| `4x4_03.json` | 4 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Biến thể extension |
+| `5x5_01.json` | 5 | 1 | `AT_LEAST`, `AT_MOST`, `EXACTLY`, `DIFFERENT`, `PARITY`, `COMPARE` | 3 | `UNIQUE` | Stress case; giải bằng 24 bước |
+ (test(m2): add 3x3 and 4x4 puzzle suite coverage)
 
 ### 9.3 Checklist trước khi nộp số liệu
 

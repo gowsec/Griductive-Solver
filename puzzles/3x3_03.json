@@ -1,0 +1,151 @@
+{
+  "n": 3,
+  "characters": {
+    "C3": {
+      "name": "Alice",
+      "job": "Detective"
+    },
+    "B3": {
+      "name": "Bao",
+      "job": "Doctor"
+    },
+    "A3": {
+      "name": "Chi",
+      "job": "Artist"
+    },
+    "C2": {
+      "name": "Dara",
+      "job": "Chef"
+    },
+    "B2": {
+      "name": "Eli",
+      "job": "Engineer"
+    },
+    "A2": {
+      "name": "Fiona",
+      "job": "Lawyer"
+    },
+    "C1": {
+      "name": "Gia",
+      "job": "Teacher"
+    },
+    "B1": {
+      "name": "Huy",
+      "job": "Pilot"
+    },
+    "A1": {
+      "name": "Iris",
+      "job": "Writer"
+    }
+  },
+  "solution": {
+    "C3": "CRIMINAL",
+    "B3": "INNOCENT",
+    "A3": "CRIMINAL",
+    "C2": "INNOCENT",
+    "B2": "CRIMINAL",
+    "A2": "INNOCENT",
+    "C1": "CRIMINAL",
+    "B1": "INNOCENT",
+    "A1": "CRIMINAL"
+  },
+  "initial_revealed": [
+    "C3"
+  ],
+  "clues": {
+    "C3": {
+      "type": "COMPARE",
+      "op": "GT",
+      "left": {
+        "kind": "CELLS",
+        "cells": [
+          "C3"
+        ]
+      },
+      "right": {
+        "kind": "CELLS",
+        "cells": [
+          "B3"
+        ]
+      }
+    },
+    "B3": {
+      "type": "AT_LEAST",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "C3",
+          "B3",
+          "A3"
+        ]
+      }
+    },
+    "A3": {
+      "type": "AT_MOST",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "C3",
+          "B3",
+          "A3",
+          "C2"
+        ]
+      }
+    },
+    "C2": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "B3",
+          "A3",
+          "C2",
+          "B2"
+        ]
+      }
+    },
+    "B2": {
+      "type": "PARITY",
+      "parity": "EVEN",
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "A3",
+          "C2",
+          "B2",
+          "A2"
+        ]
+      }
+    },
+    "A2": {
+      "type": "DIFFERENT",
+      "a": "A2",
+      "b": "C1"
+    },
+    "C1": {
+      "type": "DIFFERENT",
+      "a": "C1",
+      "b": "B1"
+    },
+    "B1": {
+      "type": "DIFFERENT",
+      "a": "B1",
+      "b": "A1"
+    },
+    "A1": {
+      "type": "PARITY",
+      "parity": "EVEN",
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "C3",
+          "B3",
+          "A1"
+        ]
+      }
+    }
+  }
+}

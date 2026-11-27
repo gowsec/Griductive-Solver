@@ -1,0 +1,221 @@
+{
+  "n": 4,
+  "characters": {
+    "D4": {
+      "name": "Ari",
+      "job": "Detective"
+    },
+    "C4": {
+      "name": "Bea",
+      "job": "Doctor"
+    },
+    "B4": {
+      "name": "Cal",
+      "job": "Artist"
+    },
+    "A4": {
+      "name": "Dee",
+      "job": "Chef"
+    },
+    "D3": {
+      "name": "Eli",
+      "job": "Engineer"
+    },
+    "C3": {
+      "name": "Fay",
+      "job": "Lawyer"
+    },
+    "B3": {
+      "name": "Gus",
+      "job": "Teacher"
+    },
+    "A3": {
+      "name": "Hal",
+      "job": "Pilot"
+    },
+    "D2": {
+      "name": "Ivy",
+      "job": "Writer"
+    },
+    "C2": {
+      "name": "Jay",
+      "job": "Baker"
+    },
+    "B2": {
+      "name": "Kai",
+      "job": "Nurse"
+    },
+    "A2": {
+      "name": "Lou",
+      "job": "Farmer"
+    },
+    "D1": {
+      "name": "Mia",
+      "job": "Sailor"
+    },
+    "C1": {
+      "name": "Ned",
+      "job": "Guard"
+    },
+    "B1": {
+      "name": "Ora",
+      "job": "Clerk"
+    },
+    "A1": {
+      "name": "Paz",
+      "job": "Astronaut"
+    }
+  },
+  "solution": {
+    "D4": "CRIMINAL",
+    "C4": "INNOCENT",
+    "B4": "CRIMINAL",
+    "A4": "INNOCENT",
+    "D3": "CRIMINAL",
+    "C3": "INNOCENT",
+    "B3": "CRIMINAL",
+    "A3": "INNOCENT",
+    "D2": "CRIMINAL",
+    "C2": "INNOCENT",
+    "B2": "CRIMINAL",
+    "A2": "INNOCENT",
+    "D1": "CRIMINAL",
+    "C1": "INNOCENT",
+    "B1": "CRIMINAL",
+    "A1": "INNOCENT"
+  },
+  "initial_revealed": [
+    "D4"
+  ],
+  "clues": {
+    "D4": {
+      "type": "COMPARE",
+      "op": "GT",
+      "left": {
+        "kind": "CELLS",
+        "cells": [
+          "D4"
+        ]
+      },
+      "right": {
+        "kind": "CELLS",
+        "cells": [
+          "C4"
+        ]
+      }
+    },
+    "C4": {
+      "type": "AT_LEAST",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "D4",
+          "C4",
+          "B4"
+        ]
+      }
+    },
+    "B4": {
+      "type": "AT_MOST",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "D4",
+          "C4",
+          "B4",
+          "A4"
+        ]
+      }
+    },
+    "A4": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "C4",
+          "B4",
+          "A4",
+          "D3"
+        ]
+      }
+    },
+    "D3": {
+      "type": "PARITY",
+      "parity": "EVEN",
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "B4",
+          "A4",
+          "D3",
+          "C3"
+        ]
+      }
+    },
+    "C3": {
+      "type": "DIFFERENT",
+      "a": "C3",
+      "b": "B3"
+    },
+    "B3": {
+      "type": "DIFFERENT",
+      "a": "B3",
+      "b": "A3"
+    },
+    "A3": {
+      "type": "DIFFERENT",
+      "a": "A3",
+      "b": "D2"
+    },
+    "D2": {
+      "type": "DIFFERENT",
+      "a": "D2",
+      "b": "C2"
+    },
+    "C2": {
+      "type": "DIFFERENT",
+      "a": "C2",
+      "b": "B2"
+    },
+    "B2": {
+      "type": "DIFFERENT",
+      "a": "B2",
+      "b": "A2"
+    },
+    "A2": {
+      "type": "DIFFERENT",
+      "a": "A2",
+      "b": "D1"
+    },
+    "D1": {
+      "type": "DIFFERENT",
+      "a": "D1",
+      "b": "C1"
+    },
+    "C1": {
+      "type": "DIFFERENT",
+      "a": "C1",
+      "b": "B1"
+    },
+    "B1": {
+      "type": "DIFFERENT",
+      "a": "B1",
+      "b": "A1"
+    },
+    "A1": {
+      "type": "PARITY",
+      "parity": "ODD",
+      "region": {
+        "kind": "CELLS",
+        "cells": [
+          "D4",
+          "C4",
+          "A1"
+        ]
+      }
+    }
+  }
+}
