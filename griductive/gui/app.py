@@ -79,7 +79,8 @@ class GriductiveGUI:
         self.f_body = (sans, 10)
         self.f_small = (sans, 9)
         self.f_head = (sans, 11, "bold")
-        self.f_icon = (sans, 24)
+        emoji_font = _pick_font(root, ("Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Noto Emoji"), sans)
+        self.f_icon = (emoji_font, 24)
         self.f_mono = (mono, 10)
         self.f_mono_s = (mono, 9)
 
@@ -137,7 +138,7 @@ class GriductiveGUI:
 
         title_box = tk.Frame(header, bg=BG)
         title_box.pack(side=tk.LEFT)
-        self.title_label = tk.Label(title_box, text="🕵️ Griductive", bg=BG, fg=FG, font=self.f_title)
+        self.title_label = tk.Label(title_box, text="🕵 Griductive", bg=BG, fg=FG, font=self.f_title)
         self.title_label.pack(anchor="w")
         tk.Label(
             title_box, text="Propositional logic deduction - prove every cell without guessing",
@@ -279,10 +280,34 @@ class GriductiveGUI:
     def _card_sizes(n: int) -> dict[str, int]:
         """Font sizes per grid dimension (bigger boards -> tighter cards)."""
         if n >= 5:
-            return {"coord": 8, "name": 9, "job": 8, "badge": 8, "icon": 0, "wrap": 120}
+            return {"coord": 8, "name": 9, "job": 8, "badge": 8, "icon": 14, "clue": 9, "wrap": 120}
         if n == 4:
-            return {"coord": 9, "name": 11, "job": 9, "badge": 9, "icon": 18, "wrap": 140}
-        return {"coord": 10, "name": 13, "job": 10, "badge": 10, "icon": 26, "wrap": 160}
+            return {"coord": 9, "name": 11, "job": 9, "badge": 9, "icon": 18, "clue": 10, "wrap": 140}
+        return {"coord": 10, "name": 13, "job": 10, "badge": 10, "icon": 26, "clue": 12, "wrap": 160}
+
+    @staticmethod
+    def _profession_emoji(job: str) -> str:
+        """Return a compact profession emoji for a character card."""
+        normalized = job.casefold()
+        icons = (
+            (("detective", "agent"), "🕵"),
+            (("doctor", "nurse"), "🩺"),
+            (("artist",), "🎨"),
+            (("chef", "cook", "baker"), "🧑‍🍳"),
+            (("engineer",), "👷"),
+            (("lawyer",), "⚖"),
+            (("teacher",), "🧑‍🏫"),
+            (("pilot",), "✈"),
+            (("writer",), "✍"),
+            (("farmer",), "🌾"),
+            (("sailor",), "⛵"),
+            (("guard",), "🛡"),
+            (("clerk",), "📋"),
+            (("astronaut",), "🚀"),
+        )
+        emoji = next((e for terms, e in icons if any(term in normalized for term in terms)), "👤")
+        # Tk mis-measures emoji followed by U+FE0F, which shifts them left.
+        return emoji.replace("\ufe0f", "")
 
     def _create_cell_widget(
         self, cell: CellId, grid_r: int, grid_c: int, state: Any, cell_gap: int
@@ -311,7 +336,7 @@ class GriductiveGUI:
 
         card = tk.Frame(
             self.grid_frame, bg=bg, highlightthickness=2, highlightbackground=border,
-            cursor="hand2" if hidden else "arrow",
+            cursor="hand2",
         )
         card.grid(row=grid_r, column=grid_c, sticky="nsew", padx=cell_gap, pady=cell_gap)
 
@@ -321,7 +346,7 @@ class GriductiveGUI:
         sz = self._card_sizes(state.n)
         sans = self.f_body[0]
 
-        # Top strip: coordinate (left) + status badge (right) -> one compact line.
+        # Top strip: coordinate (left) and status badge (right).
         header = tk.Frame(card, bg=bg)
         header.pack(fill=tk.X, padx=4, pady=(2, 0))
         lbl_coord = tk.Label(
@@ -333,46 +358,108 @@ class GriductiveGUI:
         )
         lbl_text.pack(side=tk.RIGHT)
 
-        # Identity block (optional big icon, name, job), centred in the free space.
-        body = tk.Frame(card, bg=bg)
-        body.pack(fill=tk.X, expand=True, padx=4, pady=(0, 3))
-        lbl_icon = None
-        if sz["icon"]:
-            lbl_icon = tk.Label(body, text=icon, bg=bg, fg=fg, font=(self.f_icon[0], sz["icon"]))
-            lbl_icon.pack()
-        lbl_name = tk.Label(
-            body, text=character_name, bg=bg, fg=FG, font=(sans, sz["name"], "bold"),
-            anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+        # Resolve the clue first: a revealed clue changes the whole card layout.
+        revealed_clue = next(
+            (
+                clue
+                for clue in state.revealed_clues
+                if self.engine.puzzle.clues.get(cell) is clue
+            ),
+            None,
         )
-        lbl_name.pack(fill=tk.X)
-        lbl_job = tk.Label(
-            body, text=character_job, bg=bg, fg=MUTED, font=(sans, sz["job"]),
-            anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
-        )
-        lbl_job.pack(fill=tk.X)
+        clue_text = ""
+        if revealed_clue is not None:
+            names = {c: ch.name for c, ch in self.engine.puzzle.characters.items()}
+            try:
+                clue_text = revealed_clue.describe(names)
+            except TypeError:
+                clue_text = revealed_clue.describe()
 
-        widgets = [card, header, body, lbl_coord, lbl_text, lbl_name, lbl_job]
-        if lbl_icon is not None:
-            widgets.append(lbl_icon)
+        profession_icon = self._profession_emoji(character_job)
+        body = tk.Frame(card, bg=bg)
+        lbl_clue: tk.Label | None = None
+        row: tk.Frame | None = None
+        text_col: tk.Frame | None = None
+
+        if revealed_clue is None:
+            # Hidden / no clue: icon, name and job stacked and centred.
+            body.pack(fill=tk.X, expand=True, padx=4, pady=(0, 3))
+            lbl_icon = tk.Label(
+                body, text=profession_icon, bg=bg, fg=fg, font=(self.f_icon[0], sz["icon"]),
+            )
+            lbl_icon.pack()
+            lbl_name = tk.Label(
+                body, text=character_name, bg=bg, fg=FG, font=(sans, sz["name"], "bold"),
+                anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+            )
+            lbl_name.pack(fill=tk.X)
+            lbl_job = tk.Label(
+                body, text=character_job, bg=bg, fg=MUTED, font=(sans, sz["job"]),
+                anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+            )
+            lbl_job.pack(fill=tk.X)
+        else:
+            # Solved card: [icon | name + job] row centred on top, clue centred below.
+            body.pack(fill=tk.X, padx=6, pady=(2, 0))
+            row = tk.Frame(body, bg=bg)
+            row.pack()  # no fill -> centred horizontally
+            lbl_icon = tk.Label(
+                row, text=profession_icon, bg=bg, fg=fg, font=(self.f_icon[0], sz["icon"]),
+            )
+            lbl_icon.pack(side=tk.LEFT, padx=(0, 8))
+            text_col = tk.Frame(row, bg=bg)
+            text_col.pack(side=tk.LEFT)
+            lbl_name = tk.Label(
+                text_col, text=character_name, bg=bg, fg=FG, font=(sans, sz["name"], "bold"),
+                anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+            )
+            lbl_name.pack(fill=tk.X)
+            lbl_job = tk.Label(
+                text_col, text=character_job, bg=bg, fg=MUTED, font=(sans, sz["job"]),
+                anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+            )
+            lbl_job.pack(fill=tk.X)
+
+            # Clue fills the remaining space, centred horizontally and vertically.
+            lbl_clue = tk.Label(
+                card, text=clue_text, bg=bg, fg=FG, font=(sans, sz["clue"]),
+                anchor="center", justify=tk.CENTER, wraplength=sz["wrap"],
+            )
+            lbl_clue.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
+
+        widgets = [card, header, body, lbl_coord, lbl_text, lbl_name, lbl_job, lbl_icon]
+        for extra in (row, text_col, lbl_clue):
+            if extra is not None:
+                widgets.append(extra)
+        clickables = widgets
         self.cards[cell] = {
             "frame": card,
             "widgets": widgets,
             "coord_label": lbl_coord,
             "name_label": lbl_name,
             "job_label": lbl_job,
+            "clue_label": lbl_clue,
             "status_label": lbl_text,
             "bg": bg,
             "border": border,
         }
 
         def fit_identity(_event: Any = None) -> None:
-            available = max(36, card.winfo_width() - 16)
-            lbl_name.config(wraplength=available)
-            lbl_job.config(wraplength=available)
+            width = card.winfo_width()
+            if revealed_clue is None:
+                available = max(36, width - 16)
+                lbl_name.config(wraplength=available)
+                lbl_job.config(wraplength=available)
+            else:
+                text_w = max(36, width - lbl_icon.winfo_reqwidth() - 40)
+                lbl_name.config(wraplength=text_w)
+                lbl_job.config(wraplength=text_w)
+                if lbl_clue is not None:
+                    lbl_clue.config(wraplength=max(36, width - 24))
 
         card.bind("<Configure>", fit_identity, add="+")
 
-        for w in widgets:
+        for w in clickables:
             w.bind("<Button-1>", lambda _e, c=cell: self.on_cell_clicked(c))
             if hidden:
                 w.bind("<Enter>", lambda _e, c=cell: self._paint(c, bg=HIDDEN_HOVER, border=ACCENT))
@@ -426,7 +513,11 @@ class GriductiveGUI:
         """Handle clicking a cell card to open verdict selection."""
         state = self.engine.public_state()
         if cell in state.proved:
-            self.log(f"Cell {cell} already solved as {state.proved[cell].value}.")
+            clue = self.engine.puzzle.clues.get(cell)
+            if clue is not None and clue in state.revealed_clues:
+                self._select_revealed_clue(state.revealed_clues.index(clue))
+            else:
+                self.log(f"Cell {cell} already solved as {state.proved[cell].value}.")
             return
         self.selected_cell = cell
         self._open_verdict_dialog(cell)
@@ -474,7 +565,7 @@ class GriductiveGUI:
             self.set_status(f"Proved {cell} as {st.value}", GREEN)
             self.refresh()
         elif res.outcome == VerdictOutcome.NOT_PROVABLE:
-            self.log(f"⚠️ NOT_PROVABLE: {st.value} for {cell} cannot be proved without guessing!")
+            self.log(f"⚠ NOT_PROVABLE: {st.value} for {cell} cannot be proved without guessing!")
             self.set_status(f"NOT_PROVABLE for {cell}", YELLOW)
             self._flash_cell(cell, "warn")
         elif res.outcome == VerdictOutcome.CONTRADICTED:
@@ -493,6 +584,12 @@ class GriductiveGUI:
         if self._selected_clue_index is None:
             return
         state = self.engine.public_state()
+        self._select_revealed_clue(self._selected_clue_index, state)
+
+    def _select_revealed_clue(self, index: int, state: Any = None) -> None:
+        """Select a revealed clue and highlight its referenced cells."""
+        state = state or self.engine.public_state()
+        self._selected_clue_index = index
         if 0 <= self._selected_clue_index < len(state.revealed_clues):
             clue = state.revealed_clues[self._selected_clue_index]
             try:
@@ -502,6 +599,9 @@ class GriductiveGUI:
                 if hasattr(clue, "left_cells") and hasattr(clue, "right_cells"):
                     self.highlighted_left = set(clue.left_cells(state.n))
                     self.highlighted_right = set(clue.right_cells(state.n))
+                self.clue_listbox.tag_remove("selected_clue", "1.0", tk.END)
+                line = self._selected_clue_index + 1
+                self.clue_listbox.tag_add("selected_clue", f"{line}.0", f"{line}.end")
                 self.log(f"Highlighting cells for clue {clue.id}: {sorted(str(c) for c in self.highlighted_cells)}")
                 self._render_grid(state)  # keep clue selection intact
             except Exception as e:  # noqa: BLE001
@@ -550,7 +650,7 @@ class GriductiveGUI:
             filename = Path(self.puzzle_path).name
             self.root.title(f"Griductive Solver - {filename} ({self.engine.n}×{self.engine.n})")
             self.title_label.config(
-                text=f"🕵️ Griductive · {filename} ({self.engine.n}×{self.engine.n})"
+                text=f"🕵 Griductive · {filename} ({self.engine.n}×{self.engine.n})"
             )
 
     def on_restart(self) -> None:
