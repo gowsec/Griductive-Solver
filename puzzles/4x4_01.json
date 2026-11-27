@@ -15,7 +15,7 @@
     "D3": {"name": "Lou", "job": "Farmer"},
     "A4": {"name": "Mia", "job": "Sailor"},
     "B4": {"name": "Ned", "job": "Guard"},
-    "C4": {"name": "Ora", "job": "Pilot"},
+    "C4": {"name": "Ora", "job": "Courier"},
     "D4": {"name": "Paz", "job": "Clerk"}
   },
   "solution": {
@@ -40,9 +40,9 @@
   "clues": {
     "A1": {
       "type": "COMPARE",
-      "op": "GE",
-      "left": {"kind": "CELLS", "cells": ["A2"]},
-      "right": {"kind": "CELLS", "cells": ["B1", "A1", "B4", "D4"]}
+      "op": "GT",
+      "left": {"kind": "CELLS", "cells": ["A1", "C1"]},
+      "right": {"kind": "CELLS", "cells": ["B1", "C1"]}
     },
     "B1": {
       "type": "AT_LEAST",
@@ -52,7 +52,7 @@
     "C1": {
       "type": "AT_MOST",
       "k": 2,
-      "region": {"kind": "CELLS", "cells": ["A1", "B1", "C1", "D1"]}
+      "region": {"kind": "ROW", "row": 1}
     },
     "D1": {
       "type": "EXACTLY",
@@ -61,23 +61,35 @@
     },
     "A2": {
       "type": "PARITY",
-      "parity": "EVEN",
-      "region": {"kind": "CELLS", "cells": ["C1", "D1", "A2", "B2"]}
+      "parity": "ODD",
+      "region": {"kind": "NEIGHBORS", "center": "A1"}
     },
     "B2": {"type": "DIFFERENT", "a": "B2", "b": "C2"},
-    "C2": {"type": "DIFFERENT", "a": "C2", "b": "D2"},
+    "C2": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "ROW", "row": 2}
+    },
     "D2": {"type": "DIFFERENT", "a": "D2", "b": "A3"},
     "A3": {"type": "DIFFERENT", "a": "A3", "b": "B3"},
     "B3": {"type": "DIFFERENT", "a": "B3", "b": "C3"},
-    "C3": {"type": "DIFFERENT", "a": "C3", "b": "D3"},
-    "D3": {"type": "DIFFERENT", "a": "D3", "b": "A4"},
+    "C3": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "ROW", "row": 3}
+    },
+    "D3": {
+      "type": "PARITY",
+      "parity": "EVEN",
+      "region": {"kind": "COL", "col": "A"}
+    },
     "A4": {"type": "DIFFERENT", "a": "A4", "b": "B4"},
     "B4": {"type": "DIFFERENT", "a": "B4", "b": "C4"},
-    "C4": {"type": "DIFFERENT", "a": "C4", "b": "D4"},
-    "D4": {
-      "type": "PARITY",
-      "parity": "ODD",
-      "region": {"kind": "CELLS", "cells": ["A1", "B1", "D4"]}
-    }
+    "C4": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "ROW", "row": 4}
+    },
+    "D4": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"}
   }
 }

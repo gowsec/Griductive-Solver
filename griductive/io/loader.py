@@ -82,8 +82,15 @@ def load_puzzle(path: str | Path) -> Puzzle:
 
     clues_raw = _object(_required(root, "clues", "$"), "$.clues")
     clues: dict[CellId, Clue] = {}
+    human_clues: dict[CellId, str] = {}
     for cell, raw_clue in _cell_entries(clues_raw, "$.clues", n, expected_set):
-        clues[cell] = _parse_clue(raw_clue, f"$.clues.{cell}", f"clue@{cell}", n)
+        clue_path = f"$.clues.{cell}"
+        clue_data = _object(raw_clue, clue_path)
+        clues[cell] = _parse_clue(clue_data, clue_path, f"clue@{cell}", n)
+        if "human" in clue_data:
+            human_clues[cell] = _non_empty_string(
+                clue_data["human"], f"{clue_path}.human"
+            ).strip()
     _require_complete_cells(clues, expected_set, "$.clues")
 
     initial_raw = root.get("initial_revealed", [])
@@ -108,6 +115,7 @@ def load_puzzle(path: str | Path) -> Puzzle:
         solution=MappingProxyType(dict(sorted(solution.items()))),
         clues=MappingProxyType(dict(sorted(clues.items()))),
         initial_revealed=frozenset(initial_revealed_list),
+        human_clues=MappingProxyType(dict(sorted(human_clues.items()))),
     )
 
 

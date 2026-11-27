@@ -15,6 +15,8 @@ from griductive.logic.entailment import Verdict
 from griductive.logic.trace import TraceLog
 from griductive.orchestration.runner_loop import deduction_loop
 from griductive.model.cell import CellId, Status
+from griductive.model.clue import Compare, Count, Different, Fact, Parity, Same
+from griductive.model.region import Region, RegionKind, RegionResolver
 
 # ── Palette ──────────────────────────────────────────────────────────────────
 BG = "#1f1712"
@@ -226,8 +228,14 @@ class GriductiveGUI:
             cell: character.name
             for cell, character in self.engine.puzzle.characters.items()
         }
+        clue_cells = {clue.id: cell for cell, clue in self.engine.puzzle.clues.items()}
         for clue in state.revealed_clues:
-            self.clue_listbox.insert(tk.END, f" [{clue.id}]  {clue.describe(names)}\n")
+            cell = clue_cells[clue.id]
+            description = self.engine.puzzle.human_clues.get(
+                cell, self._describe_player_clue(clue, names, state.n)
+            )
+            owner = names.get(cell, str(cell))
+            self.clue_listbox.insert(tk.END, f"{owner}: {description}\n")
         self.clue_listbox.config(state=tk.DISABLED)
         if self._selected_clue_index is not None:
             line = self._selected_clue_index + 1
@@ -240,6 +248,83 @@ class GriductiveGUI:
 
         if self.engine.is_solved():
             self.set_status("🎉 PUZZLE SOLVED!", GREEN)
+
+    @staticmethod
+    def _describe_player_clue(
+        clue: Any, names: dict[CellId, str], n: int
+    ) -> str:
+        """Render a structured clue as a natural Vietnamese sentence."""
+        if isinstance(clue, Fact):
+            status = (
+                "tội phạm"
+                if clue.status is Status.CRIMINAL
+                else "người vô tội"
+            )
+            return f"{names.get(clue.cell, str(clue.cell))} là {status}."
+
+        if isinstance(clue, Same):
+            first = names.get(clue.a, str(clue.a))
+            second = names.get(clue.b, str(clue.b))
+            return (
+                f"{first} và {second} cùng thân phận: "
+                "hoặc cả hai là tội phạm, hoặc cả hai vô tội."
+            )
+
+        if isinstance(clue, Different):
+            first = names.get(clue.a, str(clue.a))
+            second = names.get(clue.b, str(clue.b))
+            return (
+                f"{first} và {second} khác thân phận: "
+                "một người là tội phạm, người kia vô tội."
+            )
+
+        if isinstance(clue, Count):
+            region = GriductiveGUI._player_region_name(clue.region, names, n)
+            quantity = {
+                Count.EQ: f"có đúng {clue.k}",
+                Count.GE: f"có ít nhất {clue.k}",
+                Count.LE: f"có nhiều nhất {clue.k}",
+            }[clue.op]
+            return f"Trong {region}, {quantity} người là tội phạm."
+
+        if isinstance(clue, Parity):
+            region = GriductiveGUI._player_region_name(clue.region, names, n)
+            parity = "chẵn" if clue.parity == Parity.EVEN else "lẻ"
+            return f"Số người là tội phạm trong {region} là số {parity}."
+
+        if isinstance(clue, Compare):
+            left = GriductiveGUI._player_region_name(clue.left, names, n)
+            right = GriductiveGUI._player_region_name(clue.right, names, n)
+            comparison = {
+                Compare.LT: "ít hơn",
+                Compare.LE: "ít hơn hoặc bằng",
+                Compare.EQ: "bằng",
+                Compare.GE: "nhiều hơn hoặc bằng",
+                Compare.GT: "nhiều hơn",
+            }[clue.op]
+            return (
+                f"Số người là tội phạm trong {left} {comparison} "
+                f"số người là tội phạm trong {right}."
+            )
+
+        return clue.describe(names)
+
+    @staticmethod
+    def _player_region_name(
+        region: Region, names: dict[CellId, str], n: int
+    ) -> str:
+        if region.kind is RegionKind.ROW and region.row is not None:
+            return f"hàng {region.row + 1}"
+        if region.kind is RegionKind.COL and region.col is not None:
+            return f"cột {str(CellId(0, region.col))[:-1]}"
+        if region.kind is RegionKind.NEIGHBORS and region.center is not None:
+            center = names.get(region.center, str(region.center))
+            return f"các ô liền kề với {center}"
+        if region.kind is RegionKind.CELLS:
+            members = RegionResolver.cells(region, n)
+            labels = ", ".join(names.get(cell, str(cell)) for cell in members)
+            return f"các ô {labels}"
+        return region.kind.value.lower()
 
     def _render_grid(self, state: Any) -> None:
         n = state.n

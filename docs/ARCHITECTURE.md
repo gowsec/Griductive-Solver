@@ -178,6 +178,7 @@ class Puzzle:                         # CHỈ GameEngine giữ
     solution: Mapping[CellId, Status]
     clues: Mapping[CellId, Clue]      # clue gắn với thẻ của ô đó
     initial_revealed: frozenset[CellId]
+    human_clues: Mapping[CellId, str] # câu dễ đọc tùy chọn, chỉ phục vụ GUI
 
 @dataclass(frozen=True)
 class PublicState:                    # DUY NHẤT thứ logic được thấy
@@ -468,7 +469,10 @@ while not engine.is_solved():
     "A1": {"type": "FACT",      "cell": "C3", "status": "CRIMINAL"},
     "B1": {"type": "SAME",      "a": "A1", "b": "C1"},
     "C1": {"type": "DIFFERENT", "a": "A2", "b": "B2"},
-    "A2": {"type": "EXACTLY",   "k": 2, "region": {"kind": "NEIGHBORS", "center": "B2"}},
+    "A2": {
+      "human": "Có đúng 2 tội phạm ở các ô xung quanh B2.",
+      "type": "EXACTLY", "k": 2, "region": {"kind": "NEIGHBORS", "center": "B2"}
+    },
     "B2": {"type": "AT_LEAST",  "k": 1, "region": {"kind": "ROW", "row": 2}},
     "C2": {"type": "AT_MOST",   "k": 1, "region": {"kind": "COL", "col": "C"}},
     "A3": {"type": "EXACTLY",   "k": 2, "region": {"kind": "CELLS", "cells": ["A1", "B2", "C3"]}},
@@ -485,6 +489,7 @@ Quy ước:
 
 - Ô viết `"C2"` (cột chữ hoa + hàng từ 1). Trong JSON, `ROW` dùng số hàng **1-based**, `COL` dùng **chữ cột**; `loader` chuyển sang chỉ số 0-based nội bộ.
 - Khóa của `clues` là ô chứa thẻ đó; `clue.id = "clue@<ô>"`.
+- Trường `human` là câu mô tả dễ đọc tùy chọn cho giao diện; `type` và các trường cấu trúc còn lại là clue máy dùng để suy luận. GUI ghi tên nhân vật sở hữu clue, không hiện `clue@...`; nếu thiếu `human`, GUI tự tạo câu tiếng Việt từ clue cấu trúc.
 - Số `characters`, `solution`, `clues` phải bằng `n²`; thứ tự tên theo bảng chữ cái do puzzle quyết định.
 - `loader` raise `PuzzleError` kèm đường dẫn trường lỗi.
 

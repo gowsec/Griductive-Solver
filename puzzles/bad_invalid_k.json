@@ -1,13 +1,41 @@
 {
-  "n": 1,
-  "characters": {"A1": {"name": "Alex", "job": "Detective"}},
-  "solution": {"A1": "CRIMINAL"},
-  "initial_revealed": [],
+  "n": 3,
+  "characters": {
+    "A1": {"name": "Alice", "job": "Detective"},
+    "B1": {"name": "Bao", "job": "Doctor"},
+    "C1": {"name": "Chi", "job": "Artist"},
+    "A2": {"name": "Dara", "job": "Chef"},
+    "B2": {"name": "Eli", "job": "Engineer"},
+    "C2": {"name": "Fiona", "job": "Lawyer"},
+    "A3": {"name": "Gia", "job": "Teacher"},
+    "B3": {"name": "Huy", "job": "Pilot"},
+    "C3": {"name": "Iris", "job": "Writer"}
+  },
+  "solution": {
+    "A1": "CRIMINAL",
+    "B1": "INNOCENT",
+    "C1": "CRIMINAL",
+    "A2": "INNOCENT",
+    "B2": "CRIMINAL",
+    "C2": "INNOCENT",
+    "A3": "CRIMINAL",
+    "B3": "INNOCENT",
+    "C3": "CRIMINAL"
+  },
+  "initial_revealed": ["A1"],
   "clues": {
     "A1": {
       "type": "EXACTLY",
-      "k": 2,
-      "region": {"kind": "CELLS", "cells": ["A1"]}
-    }
+      "k": 5,
+      "region": {"kind": "ROW", "row": 1}
+    },
+    "B1": {"type": "FACT", "cell": "B1", "status": "INNOCENT"},
+    "C1": {"type": "FACT", "cell": "C1", "status": "CRIMINAL"},
+    "A2": {"type": "FACT", "cell": "A2", "status": "INNOCENT"},
+    "B2": {"type": "FACT", "cell": "B2", "status": "CRIMINAL"},
+    "C2": {"type": "FACT", "cell": "C2", "status": "INNOCENT"},
+    "A3": {"type": "FACT", "cell": "A3", "status": "CRIMINAL"},
+    "B3": {"type": "FACT", "cell": "B3", "status": "INNOCENT"},
+    "C3": {"type": "FACT", "cell": "C3", "status": "CRIMINAL"}
   }
 }

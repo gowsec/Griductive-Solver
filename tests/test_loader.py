@@ -32,7 +32,10 @@ def valid_puzzle_data() -> dict[str, object]:
         "solution": statuses,
         "initial_revealed": ["A1"],
         "clues": {
-            "A1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
+            "A1": {
+                "human": "A1 is a criminal.",
+                "type": "FACT", "cell": "A1", "status": "CRIMINAL",
+            },
             "B1": {"type": "SAME", "a": "A1", "b": "C1"},
             "C1": {"type": "DIFFERENT", "a": "A1", "b": "B1"},
             "A2": {
@@ -81,6 +84,8 @@ class PuzzleLoaderTests(unittest.TestCase):
         self.assertEqual(puzzle.clues[CellId(0, 0)], Fact(
             "clue@A1", CellId(0, 0), Status.CRIMINAL
         ))
+        self.assertEqual(puzzle.human_clues[CellId(0, 0)], "A1 is a criminal.")
+        self.assertNotIn(CellId(0, 1), puzzle.human_clues)
         self.assertIsInstance(puzzle.clues[CellId(0, 1)], Same)
         self.assertIsInstance(puzzle.clues[CellId(0, 2)], Different)
         count = puzzle.clues[CellId(1, 0)]
@@ -95,6 +100,17 @@ class PuzzleLoaderTests(unittest.TestCase):
         self.assertTrue(all(
             f"clue@{clue_id}" == clue.id for clue_id, clue in puzzle.clues.items()
         ))
+
+    def test_loads_separate_human_and_machine_clue_data(self) -> None:
+        path = Path(__file__).resolve().parents[1] / "puzzles" / "bad_stuck.json"
+        puzzle = load_puzzle(path)
+        cell = CellId(0, 0)
+
+        self.assertEqual(
+            puzzle.human_clues[cell],
+            "Trong hàng thứ hai, chỉ có một người là tội phạm.",
+        )
+        self.assertIsInstance(puzzle.clues[cell], Count)
 
     def test_loaded_mappings_are_immutable_and_deterministic(self) -> None:
         data = valid_puzzle_data()
@@ -143,6 +159,11 @@ class PuzzleLoaderTests(unittest.TestCase):
         data = valid_puzzle_data()
         data["clues"]["A2"]["region"]["row"] = 0
         with self.assertRaisesRegex(PuzzleError, "1 and 3"):
+            self.load_data(data)
+
+        data = valid_puzzle_data()
+        data["clues"]["A1"]["human"] = "  "
+        with self.assertRaisesRegex(PuzzleError, r"\$\.clues\.A1\.human"):
             self.load_data(data)
 
     def test_rejects_initial_revealed_unknown_or_duplicate_cell(self) -> None:

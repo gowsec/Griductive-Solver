@@ -1,151 +1,66 @@
 {
   "n": 3,
   "characters": {
-    "C3": {
-      "name": "Alice",
-      "job": "Detective"
-    },
-    "B3": {
-      "name": "Bao",
-      "job": "Doctor"
-    },
-    "A3": {
-      "name": "Chi",
-      "job": "Artist"
-    },
-    "C2": {
-      "name": "Dara",
-      "job": "Chef"
-    },
-    "B2": {
-      "name": "Eli",
-      "job": "Engineer"
-    },
-    "A2": {
-      "name": "Fiona",
-      "job": "Lawyer"
-    },
-    "C1": {
-      "name": "Gia",
-      "job": "Teacher"
-    },
-    "B1": {
-      "name": "Huy",
-      "job": "Pilot"
-    },
-    "A1": {
-      "name": "Iris",
-      "job": "Writer"
-    }
+    "A1": {"name": "Nam", "job": "Archivist"},
+    "B1": {"name": "Oanh", "job": "Botanist"},
+    "C1": {"name": "Phuc", "job": "Chemist"},
+    "A2": {"name": "Quynh", "job": "Dentist"},
+    "B2": {"name": "Son", "job": "Editor"},
+    "C2": {"name": "Tam", "job": "Firefighter"},
+    "A3": {"name": "Uyen", "job": "Geologist"},
+    "B3": {"name": "Vinh", "job": "Historian"},
+    "C3": {"name": "Yen", "job": "Jeweler"}
   },
   "solution": {
-    "C3": "CRIMINAL",
-    "B3": "INNOCENT",
-    "A3": "CRIMINAL",
-    "C2": "INNOCENT",
-    "B2": "CRIMINAL",
-    "A2": "INNOCENT",
-    "C1": "CRIMINAL",
-    "B1": "INNOCENT",
-    "A1": "CRIMINAL"
+    "A1": "INNOCENT",
+    "B1": "CRIMINAL",
+    "C1": "INNOCENT",
+    "A2": "CRIMINAL",
+    "B2": "INNOCENT",
+    "C2": "CRIMINAL",
+    "A3": "INNOCENT",
+    "B3": "CRIMINAL",
+    "C3": "CRIMINAL"
   },
-  "initial_revealed": [
-    "C3"
-  ],
+  "initial_revealed": ["A1"],
   "clues": {
-    "C3": {
+    "A1": {
       "type": "COMPARE",
-      "op": "GT",
-      "left": {
-        "kind": "CELLS",
-        "cells": [
-          "C3"
-        ]
-      },
-      "right": {
-        "kind": "CELLS",
-        "cells": [
-          "B3"
-        ]
-      }
+      "op": "LT",
+      "left": {"kind": "CELLS", "cells": ["A1"]},
+      "right": {"kind": "CELLS", "cells": ["B1"]}
     },
-    "B3": {
+    "B1": {
+      "type": "AT_MOST",
+      "k": 1,
+      "region": {"kind": "ROW", "row": 1}
+    },
+    "C1": {
       "type": "AT_LEAST",
       "k": 2,
-      "region": {
-        "kind": "CELLS",
-        "cells": [
-          "C3",
-          "B3",
-          "A3"
-        ]
-      }
+      "region": {"kind": "CELLS", "cells": ["B1", "C1", "A2"]}
     },
-    "A3": {
-      "type": "AT_MOST",
-      "k": 2,
-      "region": {
-        "kind": "CELLS",
-        "cells": [
-          "C3",
-          "B3",
-          "A3",
-          "C2"
-        ]
-      }
-    },
-    "C2": {
+    "A2": {
       "type": "EXACTLY",
       "k": 2,
-      "region": {
-        "kind": "CELLS",
-        "cells": [
-          "B3",
-          "A3",
-          "C2",
-          "B2"
-        ]
-      }
+      "region": {"kind": "NEIGHBORS", "center": "A1"}
     },
     "B2": {
       "type": "PARITY",
       "parity": "EVEN",
-      "region": {
-        "kind": "CELLS",
-        "cells": [
-          "A3",
-          "C2",
-          "B2",
-          "A2"
-        ]
-      }
+      "region": {"kind": "ROW", "row": 2}
     },
-    "A2": {
-      "type": "DIFFERENT",
-      "a": "A2",
-      "b": "C1"
-    },
-    "C1": {
-      "type": "DIFFERENT",
-      "a": "C1",
-      "b": "B1"
-    },
-    "B1": {
-      "type": "DIFFERENT",
-      "a": "B1",
-      "b": "A1"
-    },
-    "A1": {
+    "C2": {"type": "DIFFERENT", "a": "C2", "b": "A3"},
+    "A3": {
       "type": "PARITY",
       "parity": "EVEN",
-      "region": {
-        "kind": "CELLS",
-        "cells": [
-          "C3",
-          "B3",
-          "A1"
-        ]
-      }
-    }
+      "region": {"kind": "COL", "col": "B"}
+    },
+    "B3": {
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "ROW", "row": 3}
+    },
+    "C3": {"type": "FACT", "cell": "A1", "status": "INNOCENT"}
   }
 }
