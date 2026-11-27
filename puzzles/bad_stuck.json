@@ -20,47 +20,31 @@
     "C2": "INNOCENT",
     "A3": "CRIMINAL",
     "B3": "INNOCENT",
-    "C3": "CRIMINAL"
+    "C3": "INNOCENT"
   },
   "initial_revealed": ["A1"],
   "clues": {
     "A1": {
-      "human": "Trong hàng thứ hai, chỉ có một người là tội phạm.",
       "type": "EXACTLY",
       "k": 1,
-      "region": {"kind": "ROW", "row": 2}
+      "region": {"kind": "ROW", "row": 2},
+      "human": "Trong hàng thứ hai, chỉ có một người là tội phạm."
     },
-    "B1": {
-      "human": "Alice là tội phạm.",
-      "type": "FACT", "cell": "A1", "status": "CRIMINAL"
-    },
-    "C1": {
-      "human": "Bao là người vô tội.",
-      "type": "FACT", "cell": "B1", "status": "INNOCENT"
-    },
-    "A2": {
-      "human": "Chi là tội phạm.",
-      "type": "FACT", "cell": "C1", "status": "CRIMINAL"
-    },
-    "B2": {
-      "human": "Dara là người vô tội.",
-      "type": "FACT", "cell": "A2", "status": "INNOCENT"
-    },
-    "C2": {
-      "human": "Eli là tội phạm.",
-      "type": "FACT", "cell": "B2", "status": "CRIMINAL"
-    },
-    "A3": {
-      "human": "Fiona là người vô tội.",
-      "type": "FACT", "cell": "C2", "status": "INNOCENT"
-    },
+    "B1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
+    "C1": {"type": "FACT", "cell": "B1", "status": "INNOCENT"},
+    "A2": {"type": "FACT", "cell": "C1", "status": "CRIMINAL"},
+    "B2": {"type": "FACT", "cell": "A2", "status": "INNOCENT"},
+    "C2": {"type": "FACT", "cell": "B2", "status": "CRIMINAL"},
+    "A3": {"type": "FACT", "cell": "C2", "status": "INNOCENT"},
     "B3": {
-      "human": "Gia là tội phạm.",
-      "type": "FACT", "cell": "A3", "status": "CRIMINAL"
+      "type": "EXACTLY",
+      "k": 2,
+      "region": {"kind": "COL", "col": "A"}
     },
     "C3": {
-      "human": "Huy là người vô tội.",
-      "type": "FACT", "cell": "B3", "status": "INNOCENT"
+      "type": "EXACTLY",
+      "k": 1,
+      "region": {"kind": "ROW", "row": 3}
     }
   }
 }

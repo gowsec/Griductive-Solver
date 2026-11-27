@@ -29,8 +29,8 @@
     "C1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
     "A2": {"type": "SAME", "a": "A2", "b": "B2"},
     "B2": {"type": "SAME", "a": "A2", "b": "B2"},
-    "C2": {"type": "DIFFERENT", "a": "C2", "b": "A3"},
-    "A3": {"type": "DIFFERENT", "a": "C2", "b": "A3"},
+    "C2": {"type": "SAME", "a": "C2", "b": "A3"},
+    "A3": {"type": "SAME", "a": "C2", "b": "A3"},
     "B3": {"type": "SAME", "a": "B3", "b": "C3"},
     "C3": {"type": "SAME", "a": "B3", "b": "C3"}
   }

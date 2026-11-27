@@ -27,8 +27,8 @@
     "A1": {
       "type": "COMPARE",
       "op": "LT",
-      "left": {"kind": "CELLS", "cells": ["A1"]},
-      "right": {"kind": "CELLS", "cells": ["B1"]}
+      "left": {"kind": "CELLS", "cells": ["A1", "C3"]},
+      "right": {"kind": "CELLS", "cells": ["B1", "C3"]}
     },
     "B1": {
       "type": "AT_MOST",
@@ -61,6 +61,6 @@
       "k": 2,
       "region": {"kind": "ROW", "row": 3}
     },
-    "C3": {"type": "FACT", "cell": "A1", "status": "INNOCENT"}
+    "C3": {"type": "SAME", "a": "B3", "b": "C3"}
   }
 }

@@ -90,6 +90,6 @@
       "k": 2,
       "region": {"kind": "ROW", "row": 4}
     },
-    "D4": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"}
+    "D4": {"type": "DIFFERENT", "a": "C4", "b": "D4"}
   }
 }
