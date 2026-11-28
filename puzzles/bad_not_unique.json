@@ -1,22 +1,37 @@
 {
-  "n": 2,
+  "n": 3,
   "characters": {
     "A1": {"name": "Alice", "job": "Detective"},
     "B1": {"name": "Bao", "job": "Doctor"},
-    "A2": {"name": "Chi", "job": "Artist"},
-    "B2": {"name": "Dara", "job": "Chef"}
+    "C1": {"name": "Chi", "job": "Artist"},
+    "A2": {"name": "Dara", "job": "Chef"},
+    "B2": {"name": "Eli", "job": "Engineer"},
+    "C2": {"name": "Fiona", "job": "Lawyer"},
+    "A3": {"name": "Gia", "job": "Teacher"},
+    "B3": {"name": "Huy", "job": "Pilot"},
+    "C3": {"name": "Iris", "job": "Writer"}
   },
   "solution": {
     "A1": "CRIMINAL",
     "B1": "CRIMINAL",
+    "C1": "INNOCENT",
     "A2": "INNOCENT",
-    "B2": "INNOCENT"
+    "B2": "INNOCENT",
+    "C2": "CRIMINAL",
+    "A3": "CRIMINAL",
+    "B3": "INNOCENT",
+    "C3": "INNOCENT"
   },
-  "initial_revealed": [],
+  "initial_revealed": ["A1"],
   "clues": {
     "A1": {"type": "SAME", "a": "A1", "b": "B1"},
-    "B1": {"type": "SAME", "a": "A1", "b": "B1"},
+    "B1": {"type": "DIFFERENT", "a": "B1", "b": "C1"},
+    "C1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
     "A2": {"type": "SAME", "a": "A2", "b": "B2"},
-    "B2": {"type": "SAME", "a": "A2", "b": "B2"}
+    "B2": {"type": "SAME", "a": "A2", "b": "B2"},
+    "C2": {"type": "SAME", "a": "C2", "b": "A3"},
+    "A3": {"type": "SAME", "a": "C2", "b": "A3"},
+    "B3": {"type": "SAME", "a": "B3", "b": "C3"},
+    "C3": {"type": "SAME", "a": "B3", "b": "C3"}
   }
 }
