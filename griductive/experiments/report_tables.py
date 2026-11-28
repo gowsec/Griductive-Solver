@@ -1,4 +1,4 @@
-"""Generate Markdown summary tables from repeated experiment CSV files."""
+"""Generate Markdown tables from repeated experiment CSV files."""
 
 from __future__ import annotations
 
@@ -10,28 +10,58 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+TRIALS = (1, 2, 3, 4, 5)
 METRICS = (
     "primary_vars", "aux_vars", "clauses", "clauses_peak", "sat_calls",
     "decisions", "propagations", "backtracks", "steps", "waves",
     "runtime_s", "unique_runtime_s",
 )
+COMPARISON_METRICS = (
+    ("aux_vars", "Aux vars"), ("clauses", "Clauses"),
+    ("sat_calls", "SAT calls"), ("decisions", "Decisions"),
+    ("propagations", "Propagations"), ("backtracks", "Backtracks"),
+    ("steps", "Steps"), ("waves", "Waves"), ("runtime_s", "Runtime (s)"),
+)
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
-    with path.open(encoding="utf-8", newline="") as stream:
-        return list(csv.DictReader(stream))
+    with path.open(encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        required = {"puzzle", "size", "encoding", "trial", "status", *METRICS}
+        missing = required - set(reader.fieldnames or ())
+        if missing:
+            raise ValueError(f"{path}: missing CSV columns: {', '.join(sorted(missing))}")
+        return list(reader)
 
 
 def summarize(rows: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, Any]]:
+    """Return one median summary for each puzzle and encoding; require five trials."""
     groups: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
     for row in rows:
         groups[(row["puzzle"], row["encoding"])].append(row)
-    result = {}
+
+    result: dict[tuple[str, str], dict[str, Any]] = {}
     for key, trials in sorted(groups.items()):
-        summary: dict[str, Any] = {"size": trials[0]["size"], "trials": len(trials)}
-        summary["status"] = ",".join(sorted({row["status"] for row in trials}))
+        try:
+            trial_ids = [int(row["trial"]) for row in trials]
+        except ValueError as exc:
+            raise ValueError(f"{key[0]} ({key[1]}): trial must be an integer") from exc
+        if sorted(trial_ids) != list(TRIALS):
+            raise ValueError(
+                f"{key[0]} ({key[1]}): expected trials 1..5 exactly once; "
+                f"found {sorted(trial_ids)}"
+            )
+        sizes = {row["size"] for row in trials}
+        if len(sizes) != 1:
+            raise ValueError(f"{key[0]} ({key[1]}): inconsistent size values {sizes}")
+
+        summary: dict[str, Any] = {
+            "size": next(iter(sizes)), "trials": len(trials),
+            "status": ",".join(sorted({row["status"] for row in trials})),
+        }
         for metric in METRICS:
-            values = [float(row[metric]) for row in trials if row.get(metric, "") not in ("", "N/A")]
+            values = [float(row[metric]) for row in trials
+                      if row.get(metric, "").strip() not in ("", "N/A")]
             summary[metric] = median(values) if values else ""
         result[key] = summary
     return result
@@ -41,53 +71,124 @@ def _table(title: str, headers: list[str], rows: list[list[Any]]) -> str:
     def fmt(value: Any) -> str:
         if isinstance(value, float):
             return str(int(value)) if value.is_integer() else f"{value:.6g}"
-        return str(value)
+        return str(value).replace("|", "\\|").replace("\n", " ")
+
     lines = [f"## {title}", "", "| " + " | ".join(headers) + " |",
              "|" + "|".join("---" for _ in headers) + "|"]
-    for row in rows:
-        lines.append("| " + " | ".join(fmt(value) for value in row) + " |")
+    lines.extend("| " + " | ".join(fmt(value) for value in row) + " |" for row in rows)
     return "\n".join(lines)
 
 
+def _median_summary(summaries: list[dict[str, Any]], metric: str) -> Any:
+    values = [row[metric] for row in summaries if row[metric] != ""]
+    return median(values) if values else ""
+
+
+def _extension_count(directory: Path, puzzle: str) -> int:
+    path = directory.parent / "puzzles" / puzzle
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        clues = data.get("clues", {}).values()
+        return sum(clue.get("type") in ("PARITY", "COMPARE") for clue in clues)
+    except (OSError, ValueError, AttributeError):
+        return 0
+
+
 def render(directory: Path) -> str:
-    comb_rows = read_csv(directory / "comb.csv")
-    seq_rows = read_csv(directory / "seq.csv")
-    comb = {k: v for k, v in summarize(comb_rows).items() if not k[0].startswith("bad_")}
-    seq = {k: v for k, v in summarize(seq_rows).items() if not k[0].startswith("bad_")}
-    tables = []
-    metric_cols = ["aux_vars", "clauses", "sat_calls", "decisions", "runtime_s"]
-    tables.append(_table("E1 — combinatorial theo kích thước (median)",
-        ["Puzzle", "N", *metric_cols],
-        [[puzzle, s["size"], *(s[m] for m in metric_cols)] for (puzzle, _), s in comb.items()]))
-    tables.append(_table("E2 — combinatorial vs sequential (median)",
-        ["Puzzle", "Encoding", "Aux", "Clauses", "SAT calls", "Runtime (s)"],
-        [[puzzle, enc, s["aux_vars"], s["clauses"], s["sat_calls"], s["runtime_s"]]
-         for (puzzle, enc), s in sorted({**comb, **seq}.items())]))
+    comb = summarize(read_csv(directory / "comb.csv"))
+    seq = summarize(read_csv(directory / "seq.csv"))
+    for key in comb:
+        if key[1] != "combinatorial":
+            raise ValueError(f"comb.csv contains unexpected encoding {key[1]!r}")
+    for key in seq:
+        if key[1] != "sequential":
+            raise ValueError(f"seq.csv contains unexpected encoding {key[1]!r}")
+
+    # The malformed-input fixtures are reported in the failure table, not the
+    # valid-puzzle experiments. The two intentional STUCK puzzles remain valid.
+    comb_valid = {k: v for k, v in comb.items() if not k[0].startswith("bad_")}
+    seq_valid = {k: v for k, v in seq.items() if not k[0].startswith("bad_")}
+    if {puzzle for puzzle, _ in comb_valid} != {puzzle for puzzle, _ in seq_valid}:
+        raise ValueError("comb.csv and seq.csv must contain the same valid puzzles")
+
+    metric_names = [name for name, _ in COMPARISON_METRICS]
+    metric_labels = [label for _, label in COMPARISON_METRICS]
+    by_size: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for summary in comb_valid.values():
+        by_size[summary["size"]].append(summary)
+    size_rows = [
+        [f"{size}×{size}", len(values),
+         *(_median_summary(values, metric) for metric in metric_names)]
+        for size, values in sorted(by_size.items(), key=lambda item: int(item[0]))
+    ]
+    per_puzzle_rows = [
+        [puzzle, summary["size"], *(summary[m] for m in metric_names)]
+        for (puzzle, _), summary in sorted(comb_valid.items())
+    ]
+    tables = [
+        _table("E1 — combinatorial theo kích thước (median 5 trials)",
+               ["Kích thước", "Số puzzle", *metric_labels], size_rows),
+        _table("E1 — chi tiết theo puzzle (median 5 trials)",
+               ["Puzzle", "N", *metric_labels], per_puzzle_rows),
+    ]
+
+    e2_rows = []
+    for puzzle, _ in sorted(comb_valid):
+        c = comb_valid[(puzzle, "combinatorial")]
+        s = seq_valid[(puzzle, "sequential")]
+        e2_rows.append([puzzle, c["size"],
+                        *(value for metric in metric_names
+                          for value in (c[metric], s[metric]))])
+    e2_headers = ["Puzzle", "N"] + [
+        f"{label} ({encoding})"
+        for _, label in COMPARISON_METRICS
+        for encoding in ("comb", "seq")
+    ]
+    tables.append(_table("E2 — combinatorial vs sequential (median 5 trials)",
+                          e2_headers, e2_rows))
 
     e4_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for (puzzle, _), summary in comb.items():
-        puzzle_path = directory.parent / "puzzles" / puzzle
-        try:
-            data = json.loads(puzzle_path.read_text(encoding="utf-8"))
-            clues = data.get("clues", {}).values()
-            ext_count = sum(clue.get("type") in ("PARITY", "COMPARE") for clue in clues)
-        except (OSError, ValueError, AttributeError):
-            ext_count = 0
-        e4_groups["With extension" if ext_count else "Without extension"].append(summary)
-    e4_rows = []
-    for label, values in sorted(e4_groups.items()):
-        e4_rows.append([label, len(values), *(median([float(v[m]) for v in values if v[m] != ""]) if any(v[m] != "" for v in values) else "" for m in ("clauses", "sat_calls", "runtime_s"))])
-    tables.append(_table("E4 — đối chứng extension", ["Nhóm", "Puzzles", "Clauses", "SAT calls", "Runtime (s)"], e4_rows))
+    for (puzzle, _), summary in comb_valid.items():
+        label = "Có extension" if _extension_count(directory, puzzle) else "Không extension"
+        e4_groups[label].append(summary)
+    e4_rows = [
+        [label, len(values), *(_median_summary(values, metric)
+                               for metric in ("clauses", "aux_vars", "sat_calls",
+                                              "decisions", "propagations", "backtracks",
+                                              "runtime_s"))]
+        for label, values in sorted(e4_groups.items())
+    ]
+    tables.append(_table(
+        "E4 — đối chứng puzzle có/không extension (median puzzle medians)",
+        ["Nhóm", "Số puzzle", "Clauses", "Aux vars", "SAT calls", "Decisions",
+         "Propagations", "Backtracks", "Runtime (s)"], e4_rows,
+    ))
 
-    failures = []
-    for source, rows in (("comb", comb_rows), ("seq", seq_rows)):
-        grouped: dict[tuple[str, str, str], list[dict[str, str]]] = defaultdict(list)
-        for row in rows:
+    failures: list[list[Any]] = []
+    for source, summaries, raw_rows in (
+        ("comb", comb, read_csv(directory / "comb.csv")),
+        ("seq", seq, read_csv(directory / "seq.csv")),
+    ):
+        by_key: dict[tuple[str, str, str], list[dict[str, str]]] = defaultdict(list)
+        for row in raw_rows:
             if row["status"] != "SOLVED":
-                grouped[(row["puzzle"], row["status"], row["error"])].append(row)
-        failures.extend([[source, puzzle, f"1–{len(trials)}", status, error or "—"]
-                         for (puzzle, status, error), trials in sorted(grouped.items())])
-    tables.append(_table("Ca lỗi / stuck / timeout", ["CSV", "Puzzle", "Trial", "Status", "Error"], failures or [["—", "Không có", "—", "—", "—"]]))
+                by_key[(row["puzzle"], row["status"], row.get("error", ""))].append(row)
+        for (puzzle, status, error), rows in sorted(by_key.items()):
+            ids = ", ".join(str(int(row["trial"])) for row in sorted(rows, key=lambda r: int(r["trial"])))
+            summary = summaries[(puzzle, "combinatorial" if source == "comb" else "sequential")]
+            metrics = "; ".join(
+                f"{label}: {summary[name]}" for name, label in
+                (("sat_calls", "SAT"), ("decisions", "decisions"),
+                 ("propagations", "propagations"), ("backtracks", "backtracks"),
+                 ("steps", "steps"), ("waves", "waves"),
+                 ("runtime_s", "runtime s"))
+            )
+            failures.append([source, puzzle, ids, status, error or "—", metrics])
+    tables.append(_table(
+        "Ca lỗi / stuck / timeout (liệt kê trial thực tế; chỉ số là median)",
+        ["CSV", "Puzzle", "Trial", "Status", "Error", "Chỉ số lúc dừng (median)"],
+        failures or [["—", "Không có", "—", "—", "—", "—"]],
+    ))
     return "\n\n".join(tables) + "\n"
 
 
