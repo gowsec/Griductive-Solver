@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 from itertools import product
 from pathlib import Path
 from typing import Callable
@@ -17,6 +18,7 @@ from griductive.model.clue import Clue, Count, Different, Fact, Same
 from griductive.model.puzzle import PublicState, Puzzle
 from griductive.model.region import Region, RegionKind
 from griductive.logic.dpll import SolverTimeout
+from griductive.io.loader import PuzzleError, load_puzzle
 
 def _make_state(
     n: int,
@@ -276,6 +278,33 @@ def test_agt_08_agent_on_inconsistent_state() -> None:
     assert agent.next_forced(state) is None
     assert agent.last_verdict is Verdict.INCONSISTENT
     assert agent.hint(state) is None
+
+
+def test_bad_contradiction_fixture_reaches_agent_inconsistent_path() -> None:
+    """The fixture is rejected by the loader, but its contradictory public clues make an inconsistent KB."""
+    puzzle_path = Path(__file__).resolve().parents[1] / "puzzles" / "bad_contradiction.json"
+    with puzzle_path.open(encoding="utf-8") as puzzle_file:
+        raw_puzzle = json.load(puzzle_file)
+
+    # The loader correctly rejects this fixture because B1's clue conflicts with
+    # the supplied hidden solution. That is separate from agent behavior.
+    with pytest.raises(PuzzleError, match="clue is not satisfied"):
+        load_puzzle(puzzle_path)
+
+    raw_facts = (raw_puzzle["clues"]["A1"], raw_puzzle["clues"]["B1"])
+    facts = tuple(
+        Fact(
+            id=f"clue@{cell}",
+            cell=CellId.parse(raw_fact["cell"]),
+            status=Status(raw_fact["status"]),
+        )
+        for cell, raw_fact in zip(("A1", "B1"), raw_facts, strict=True)
+    )
+    a1 = CellId.parse("A1")
+    state = _make_state(2, clues=facts, proved={})
+
+    result = LogicAgent().classify(state, a1)
+    assert result.verdict is Verdict.INCONSISTENT
 
 
 def test_agt_09_classify_matches_engine_oracle_signature() -> None:
