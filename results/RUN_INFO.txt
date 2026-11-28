@@ -1,15 +1,33 @@
-﻿Griductive Solver experiment run
+Griductive Solver experiment run
 
-Git commit (git rev-parse HEAD): 8bfe30d52617b2f4efa999bd59fe24a5cf3cca41
-Working tree: modified during this run; source changes were not committed, so CSVs correspond to this commit plus the current working tree.
+Run date: 2026-11-28 (Asia/Bangkok)
+Git commit (git rev-parse HEAD): 9f65780cd80d2ac20a733931f056dc2fa72ec0c9
+Working tree: modified; experiment runner source was unchanged during this run. The CSVs were regenerated after the puzzle files were updated.
 Puzzle suite: puzzles/*.json (7 standard puzzles plus 8 bad/stuck cases)
 
 Commands:
 python main.py experiment --suite puzzles/ --timeout 60 --repeat 5 --encoding combinatorial --out results/comb.csv
 python main.py experiment --suite puzzles/ --timeout 60 --repeat 5 --encoding sequential --out results/seq.csv
-python -m griductive.experiments.report_tables
+python -m griductive.experiments.report_tables --out results/summary_tables.md
 
-Protocol: for each puzzle and encoding, one unrecorded warmup followed by trial=1..5. Runtime reports median across those five trials.
+Protocol: for each puzzle and encoding, one unrecorded warmup followed by trial=1..5. Runtime reports the median across those five trials. All 15 puzzle files were included in both CSVs.
+
+Puzzle file SHA-256 (for identifying the exact suite used):
+3x3_01.json 25A8C2D2C054163C5EE308109DFCF5138195440614B6352EA5468032F3C01EA4
+3x3_02.json 16DE8D72BBF2DC5F7A4951C1248E6CEFF9263EC6730A9E062276C6998B31C262
+3x3_03.json 6F60EC002E1DBA8E9650D1C560BD21C189CEBB5BC0ABD8588A6F70F156D734D1
+4x4_01.json 989B4832BA35DD42EE53866B0894264E5C10D2C35B6335F02689412C113E74DC
+4x4_02.json 08A82B2F14459E30C3C90716E0A07C5D7FF421D3890A164A37E3C0D16B8F0DF1
+4x4_03.json 90A5C3B1CBE566DEDD7194C90AB930F413247C10310526D5A559F648F4B9CF81
+5x5_01.json CE0BA4F0437DABE24EE9DB6576A223DBA4F91B3A42900D404A6EEC75032DAE01
+bad_contradiction.json 5D16033A694DD1CD87D71CD28E78C9644D112CCDF38579C6878B617BF7CB8E50
+bad_invalid_k.json 3975632AEC3BBFFC342650D187053A712BA82BE2C7BB501A62CA2DE1B0CFDACC
+bad_missing_cell.json A4DAE68C85631A431BE6CB3B2DA79CBE4D55BDC1818063CBE936915FDDE74AC7
+bad_not_unique.json 83AF3D18A9D3B94F4FB1F91534B4CE53FC6674FDFAC24C53E936CF4B55BBD5DB
+bad_schema.json 9380FBFA0CE21F7A25DFAE28DD6625E059239EF8F338E7636B7135A1DE494255
+bad_solution_mismatch.json C15C59C18E0260BC5A839D7E26FD6DD8EAE4E8EA4916042ACA37D386217F978C
+bad_stuck.json 23CEDCB67F2C8DDFB86F6AD468CBF3FC972B4908CD3373DF4325BEC3FA2ACEA9
+bad_unknown_cell.json F4F818021FFCADB2F3C471C9B90420314DF45753A39C930861299FBABDDE6951
 
 Machine configuration:
 CPU: AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD
@@ -18,4 +36,3 @@ RAM: 7.21 GiB
 OS: Windows-11-10.0.26200-SP0
 Python: Python 3.15.2
 Power state and concurrent workload: unavailable to this restricted environment
-
