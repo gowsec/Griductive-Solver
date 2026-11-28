@@ -28,7 +28,7 @@
       "type": "EXACTLY",
       "k": 1,
       "region": {"kind": "ROW", "row": 2},
-      "human": "Trong hàng thứ hai, chỉ có một người là tội phạm."
+      "human": "There is exactly one criminal in row 2."
     },
     "B1": {"type": "FACT", "cell": "A1", "status": "CRIMINAL"},
     "C1": {"type": "FACT", "cell": "B1", "status": "INNOCENT"},

@@ -232,9 +232,7 @@ class GriductiveGUI:
         clue_cells = {clue.id: cell for cell, clue in self.engine.puzzle.clues.items()}
         for clue in state.revealed_clues:
             cell = clue_cells[clue.id]
-            description = self.engine.puzzle.human_clues.get(
-                cell, self._describe_player_clue(clue, names, state.n)
-            )
+            description = self._describe_player_clue(clue, names, state.n)
             owner = names.get(cell, str(cell))
             self.clue_listbox.insert(tk.END, f"{owner}: {description}\n")
         self.clue_listbox.config(state=tk.DISABLED)
@@ -254,59 +252,46 @@ class GriductiveGUI:
     def _describe_player_clue(
         clue: Any, names: dict[CellId, str], n: int
     ) -> str:
-        """Render a structured clue as a natural Vietnamese sentence."""
+        """Render a structured clue as a natural English sentence."""
         if isinstance(clue, Fact):
-            status = (
-                "tội phạm"
-                if clue.status is Status.CRIMINAL
-                else "người vô tội"
-            )
-            return f"{names.get(clue.cell, str(clue.cell))} là {status}."
+            status = "a criminal" if clue.status is Status.CRIMINAL else "innocent"
+            return f"{names.get(clue.cell, str(clue.cell))} is {status}."
 
         if isinstance(clue, Same):
             first = names.get(clue.a, str(clue.a))
             second = names.get(clue.b, str(clue.b))
-            return (
-                f"{first} và {second} cùng thân phận: "
-                "hoặc cả hai là tội phạm, hoặc cả hai vô tội."
-            )
+            return f"{first} and {second} have the same status: they are both criminals or both innocent."
 
         if isinstance(clue, Different):
             first = names.get(clue.a, str(clue.a))
             second = names.get(clue.b, str(clue.b))
-            return (
-                f"{first} và {second} khác thân phận: "
-                "một người là tội phạm, người kia vô tội."
-            )
+            return f"{first} and {second} have different statuses: one is a criminal and the other is innocent."
 
         if isinstance(clue, Count):
             region = GriductiveGUI._player_region_name(clue.region, names, n)
             quantity = {
-                Count.EQ: f"có đúng {clue.k}",
-                Count.GE: f"có ít nhất {clue.k}",
-                Count.LE: f"có nhiều nhất {clue.k}",
+                Count.EQ: f"exactly {clue.k}",
+                Count.GE: f"at least {clue.k}",
+                Count.LE: f"at most {clue.k}",
             }[clue.op]
-            return f"Trong {region}, {quantity} người là tội phạm."
+            return f"There are {quantity} criminals in {region}."
 
         if isinstance(clue, Parity):
             region = GriductiveGUI._player_region_name(clue.region, names, n)
-            parity = "chẵn" if clue.parity == Parity.EVEN else "lẻ"
-            return f"Số người là tội phạm trong {region} là số {parity}."
+            parity = "even" if clue.parity == Parity.EVEN else "odd"
+            return f"The number of criminals in {region} is {parity}."
 
         if isinstance(clue, Compare):
             left = GriductiveGUI._player_region_name(clue.left, names, n)
             right = GriductiveGUI._player_region_name(clue.right, names, n)
             comparison = {
-                Compare.LT: "ít hơn",
-                Compare.LE: "ít hơn hoặc bằng",
-                Compare.EQ: "bằng",
-                Compare.GE: "nhiều hơn hoặc bằng",
-                Compare.GT: "nhiều hơn",
+                Compare.LT: "less than",
+                Compare.LE: "less than or equal to",
+                Compare.EQ: "equal to",
+                Compare.GE: "greater than or equal to",
+                Compare.GT: "greater than",
             }[clue.op]
-            return (
-                f"Số người là tội phạm trong {left} {comparison} "
-                f"số người là tội phạm trong {right}."
-            )
+            return f"The number of criminals in {left} is {comparison} the number in {right}."
 
         return clue.describe(names)
 
@@ -315,16 +300,16 @@ class GriductiveGUI:
         region: Region, names: dict[CellId, str], n: int
     ) -> str:
         if region.kind is RegionKind.ROW and region.row is not None:
-            return f"hàng {region.row + 1}"
+            return f"row {region.row + 1}"
         if region.kind is RegionKind.COL and region.col is not None:
-            return f"cột {str(CellId(0, region.col))[:-1]}"
+            return f"column {str(CellId(0, region.col))[:-1]}"
         if region.kind is RegionKind.NEIGHBORS and region.center is not None:
             center = names.get(region.center, str(region.center))
-            return f"các ô liền kề với {center}"
+            return f"the cells adjacent to {center}"
         if region.kind is RegionKind.CELLS:
             members = RegionResolver.cells(region, n)
             labels = ", ".join(names.get(cell, str(cell)) for cell in members)
-            return f"các ô {labels}"
+            return f"the cells {labels}"
         return region.kind.value.lower()
 
     def _render_grid(self, state: Any) -> None:
@@ -372,28 +357,39 @@ class GriductiveGUI:
 
     @staticmethod
     def _profession_emoji(job: str) -> str:
-        """Return a compact profession emoji for a character card."""
+        """Return a compact emoji for each profession used by the puzzles."""
         normalized = job.casefold()
         icons = (
-            (("detective", "agent"), "🕵"),
-            (("doctor", "nurse"), "🩺"),
-            (("artist",), "🎨"),
-            (("chef", "cook", "baker"), "🧑‍🍳"),
-            (("engineer",), "👷"),
-            (("lawyer",), "⚖"),
-            (("teacher",), "🧑‍🏫"),
-            (("pilot",), "✈"),
-            (("writer",), "✍"),
-            (("farmer",), "🌾"),
-            (("sailor",), "⛵"),
-            (("guard",), "🛡"),
-            (("clerk",), "📋"),
-            (("astronaut",), "🚀"),
+            (("detective", "agent"), "\U0001F575"),
+            (("doctor", "nurse", "dentist", "optician", "pharmacist"), "\U0001F9D1\u200D\u2695\uFE0F"),
+            (("artist", "illustrator", "painter"), "\U0001F3A8"),
+            (("chef", "cook", "baker"), "\U0001F9D1\u200D\U0001F373"),
+            (("engineer", "architect", "mechanic", "locksmith"), "\U0001F6E0"),
+            (("lawyer", "judge", "diplomat"), "\u2696"),
+            (("teacher", "professor", "tutor"), "\U0001F9D1\u200D\U0001F3EB"),
+            (("pilot", "navigator"), "\U0001F680"),
+            (("astronomer",), "\U0001F52D"),
+            (("writer", "editor", "journalist", "historian", "linguist", "interpreter", "archivist"), "\U0001F4DA"),
+            (("farmer", "forester", "botanist", "ecologist", "geologist", "geographer", "naturalist", "herbalist", "florist"), "\U0001F33F"),
+            (("sailor", "diver"), "\u2693"),
+            (("guard", "firefighter"), "\U0001F6E1"),
+            (("clerk", "keeper"), "\U0001F4CB"),
+            (("banker", "economist"), "\U0001F4B0"),
+            (("barber",), "\U0001FA92"),
+            (("biologist", "chemist", "physicist"), "\U0001F9EA"),
+            (("blacksmith", "carpenter", "glassblower"), "\U0001F528"),
+            (("courier", "driver"), "\U0001F69A"),
+            (("curator",), "\U0001F5BC"),
+            (("falconer",), "\U0001F985"),
+            (("harpist", "organist", "singer"), "\U0001F3B5"),
+            (("juggler",), "\U0001F939"),
+            (("jeweler",), "\U0001F48E"),
+            (("knitter", "tailor"), "\U0001F9F5"),
+            (("mathematician",), "\U0001F4D0"),
         )
-        emoji = next((e for terms, e in icons if any(term in normalized for term in terms)), "👤")
+        emoji = next((icon for terms, icon in icons if normalized in terms), "\U0001F464")
         # Tk mis-measures emoji followed by U+FE0F, which shifts them left.
         return emoji.replace("\ufe0f", "")
-
     def _create_cell_widget(
         self, cell: CellId, grid_r: int, grid_c: int, state: Any, cell_gap: int
     ) -> None:
@@ -455,10 +451,7 @@ class GriductiveGUI:
         clue_text = ""
         if revealed_clue is not None:
             names = {c: ch.name for c, ch in self.engine.puzzle.characters.items()}
-            try:
-                clue_text = revealed_clue.describe(names)
-            except TypeError:
-                clue_text = revealed_clue.describe()
+            clue_text = self._describe_player_clue(revealed_clue, names, state.n)
 
         profession_icon = self._profession_emoji(character_job)
         body = tk.Frame(card, bg=bg)
