@@ -232,7 +232,7 @@ class GriductiveGUI:
         clue_cells = {clue.id: cell for cell, clue in self.engine.puzzle.clues.items()}
         for clue in state.revealed_clues:
             cell = clue_cells[clue.id]
-            description = self._describe_player_clue(clue, names, state.n)
+            description = self._player_clue_text(cell, clue, names, state.n)
             owner = names.get(cell, str(cell))
             self.clue_listbox.insert(tk.END, f"{owner}: {description}\n")
         self.clue_listbox.config(state=tk.DISABLED)
@@ -247,6 +247,18 @@ class GriductiveGUI:
 
         if self.engine.is_solved():
             self.set_status("🎉 PUZZLE SOLVED!", GREEN)
+
+    def _player_clue_text(
+        self, cell: CellId, clue: Any, names: dict[CellId, str], n: int
+    ) -> str:
+        """Prefer the human-readable clue supplied by the puzzle."""
+        human_clues = getattr(self.engine.puzzle, "human_clues", {})
+        human_text = human_clues.get(cell)
+
+        if isinstance(human_text, str) and human_text.strip():
+            return human_text.strip()
+
+        return self._describe_player_clue(clue, names, n)
 
     @staticmethod
     def _describe_player_clue(
@@ -314,6 +326,15 @@ class GriductiveGUI:
 
     def _render_grid(self, state: Any) -> None:
         n = state.n
+
+        # Keep large 5x5 boards within the available vertical space.
+        if n >= 5:
+            self.grid_frame.grid_propagate(False)
+            self.grid_frame.configure(height=560)
+        else:
+            self.grid_frame.grid_propagate(True)
+            self.grid_frame.configure(height=0)
+
         old_dimension = self._grid_dimension
         for index in range(max(old_dimension, n) + 1):
             self.grid_frame.grid_rowconfigure(
@@ -451,7 +472,9 @@ class GriductiveGUI:
         clue_text = ""
         if revealed_clue is not None:
             names = {c: ch.name for c, ch in self.engine.puzzle.characters.items()}
-            clue_text = self._describe_player_clue(revealed_clue, names, state.n)
+            clue_text = self._player_clue_text(
+                cell, revealed_clue, names, state.n
+            )
 
         profession_icon = self._profession_emoji(character_job)
         body = tk.Frame(card, bg=bg)

@@ -101,7 +101,7 @@ class GUITests(unittest.TestCase):
         list(deduction_loop(engine, agent, trace))
         gui.refresh()
         rendered = gui.clue_listbox.get("1.0", tk.END).lower()
-        for family in ("có đúng", "có ít nhất", "có nhiều nhất", "số chẵn", "nhiều hơn"):
+        for family in ("exactly", "at least", "at most", "even", "greater than"):
             self.assertIn(family, rendered)
         self.assertNotIn("clue@", rendered)
 
@@ -112,11 +112,14 @@ class GUITests(unittest.TestCase):
         path = Path(__file__).resolve().parents[1] / "puzzles" / "bad_stuck.json"
         engine = GameEngine.load(str(path), LogicAgent().classify)
         gui = self.GriductiveGUI(self.root, engine)
+
         rendered = gui.clue_listbox.get("1.0", tk.END)
-        self.assertIn(
-            "Alice: Trong hàng thứ hai, chỉ có một người là tội phạm.",
-            rendered,
-        )
+
+        cell = CellId(0, 0)
+        character = engine.puzzle.characters[cell]
+        expected = f"{character.name}: {engine.puzzle.human_clues[cell]}"
+
+        self.assertIn(expected, rendered)
         self.assertNotIn("clue@", rendered)
 
     def test_loading_puzzle_clears_selection_and_updates_title(self) -> None:

@@ -108,7 +108,7 @@ class PuzzleLoaderTests(unittest.TestCase):
 
         self.assertEqual(
             puzzle.human_clues[cell],
-            "Trong hàng thứ hai, chỉ có một người là tội phạm.",
+            "There is exactly one criminal in row 2.",
         )
         self.assertIsInstance(puzzle.clues[cell], Count)
 
