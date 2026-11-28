@@ -30,7 +30,7 @@ def test_runner_schema_error_and_csv_have_complete_fields(tmp_path: Path) -> Non
     with output.open(encoding="utf-8", newline="") as stream:
         reader = csv.DictReader(stream)
         assert tuple(reader.fieldnames or ()) == CSV_FIELDS
-        assert len(list(reader)) == 1
+        assert len(list(reader)) == 5
 
 
 def test_runner_solves_sample_with_selected_encoding() -> None:

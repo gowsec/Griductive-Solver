@@ -17,8 +17,8 @@
     "C1": "CRIMINAL",
     "A2": "INNOCENT",
     "B2": "CRIMINAL",
-    "C2": "INNOCENT",
-    "A3": "CRIMINAL",
+    "C2": "CRIMINAL",
+    "A3": "INNOCENT",
     "B3": "INNOCENT",
     "C3": "CRIMINAL"
   },
@@ -27,36 +27,40 @@
     "A1": {
       "type": "COMPARE",
       "op": "GT",
-      "left": {"kind": "CELLS", "cells": ["A1"]},
-      "right": {"kind": "CELLS", "cells": ["B1"]}
+      "left": {"kind": "CELLS", "cells": ["A1", "C3"]},
+      "right": {"kind": "CELLS", "cells": ["B1", "C3"]}
     },
     "B1": {
       "type": "AT_LEAST",
       "k": 2,
-      "region": {"kind": "CELLS", "cells": ["A1", "B1", "C1"]}
+      "region": {"kind": "ROW", "row": 1}
     },
     "C1": {
       "type": "AT_MOST",
       "k": 2,
-      "region": {"kind": "CELLS", "cells": ["A1", "B1", "C1", "A2"]}
+      "region": {"kind": "CELLS", "cells": ["A1", "C1", "A2"]}
     },
     "A2": {
       "type": "EXACTLY",
-      "k": 2,
-      "region": {"kind": "CELLS", "cells": ["B1", "C1", "A2", "B2"]}
+      "k": 1,
+      "region": {"kind": "NEIGHBORS", "center": "A1"}
     },
     "B2": {
       "type": "PARITY",
       "parity": "EVEN",
-      "region": {"kind": "CELLS", "cells": ["C1", "A2", "B2", "C2"]}
+      "region": {"kind": "ROW", "row": 2}
     },
     "C2": {"type": "DIFFERENT", "a": "C2", "b": "A3"},
-    "A3": {"type": "DIFFERENT", "a": "A3", "b": "B3"},
+    "A3": {
+      "type": "PARITY",
+      "parity": "ODD",
+      "region": {"kind": "COL", "col": "B"}
+    },
     "B3": {"type": "DIFFERENT", "a": "B3", "b": "C3"},
     "C3": {
-      "type": "PARITY",
-      "parity": "EVEN",
-      "region": {"kind": "CELLS", "cells": ["A1", "B1", "C3"]}
+      "type": "EXACTLY",
+      "k": 1,
+      "region": {"kind": "ROW", "row": 3}
     }
   }
 }
